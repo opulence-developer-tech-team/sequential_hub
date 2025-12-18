@@ -172,7 +172,7 @@ export default function ShippingSettingsPage() {
 
         {/* Location Fees */}
         <div className="bg-white rounded-lg shadow-sm p-6">
-          <div className="flex items-center justify-between mb-4">
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="text-xl font-semibold text-gray-900">Shipping Fees by Location</h2>
               <p className="text-sm text-gray-600 mt-1">
@@ -182,7 +182,7 @@ export default function ShippingSettingsPage() {
             {availableLocations.length > 0 && (
               <button
                 onClick={handleAddLocation}
-                className="flex items-center px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors"
+                className="w-full sm:w-auto justify-center flex items-center px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Add Location

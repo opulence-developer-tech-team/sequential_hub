@@ -70,7 +70,7 @@ export const emailService = {
    * Generate email verification HTML template with luxury blue theme and tailoring/sewing design
    */
   generateOTPEmailTemplate(otp: string, firstName: string, verificationToken?: string): string {
-    const logoUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/icon/sewing-machine.png`;
+    const logoUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/logo/logo.png`;
     const verificationUrl = verificationToken 
       ? `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/verify-email/${verificationToken}`
       : null;
@@ -102,29 +102,19 @@ export const emailService = {
                       
                       <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                         <tr>
-                          <td style="padding: 50px 30px 45px; text-align: center; position: relative;">
-                            <!-- Decorative Thread Spools -->
-                            <div style="position: absolute; top: 20px; left: 30px; width: 35px; height: 35px; border: 2px solid rgba(255,255,255,0.25); border-radius: 50%;"></div>
-                            <div style="position: absolute; top: 30px; right: 40px; width: 28px; height: 28px; border: 2px solid rgba(255,255,255,0.2); border-radius: 50%;"></div>
-                            <div style="position: absolute; bottom: 20px; left: 50px; width: 22px; height: 22px; border: 2px solid rgba(255,255,255,0.2); border-radius: 50%;"></div>
-                            
+                          <td style="padding: 26px 24px 22px; text-align: center; position: relative;">
                             <!-- Logo Container -->
-                            <div style="margin: 0 auto 25px; width: 85px; height: 85px; background-color: #ffffff; border-radius: 18px; display: inline-block; padding: 14px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2), 0 2px 8px rgba(0, 0, 0, 0.1); border: 3px solid rgba(255, 255, 255, 0.4);">
-                              <img src="${logoUrl}" alt="Sequential Hub Logo" width="57" height="57" style="display: block; width: 57px; height: 57px; filter: brightness(0) invert(0.2);" />
+                            <div style="margin: 0 auto 14px; width: 56px; height: 56px; background-color: #ffffff; border-radius: 14px; display: inline-block; padding: 6px; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18); border: 1px solid rgba(255, 255, 255, 0.45);">
+                              <img src="${logoUrl}" alt="Sequential Hub Logo" width="44" height="44" style="display: block; width: 44px; height: 44px; border-radius: 12px;" />
                             </div>
                             
                             <!-- Brand Name -->
-                            <h1 style="margin: 0 0 10px 0; color: #ffffff; font-size: 28px; font-weight: 700; letter-spacing: 1px; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);">Sequential Hub</h1>
-                            <p style="margin: 0 0 20px 0; color: rgba(255, 255, 255, 0.95); font-size: 12px; font-weight: 400; letter-spacing: 2px; text-transform: uppercase;">Premium Custom Clothing</p>
+                            <h1 style="margin: 0 0 6px 0; color: #ffffff; font-size: 22px; font-weight: 700; letter-spacing: 0.4px; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.14);">Sequential Hub</h1>
+                            <p style="margin: 0 0 14px 0; color: rgba(255, 255, 255, 0.92); font-size: 12px; font-weight: 500; letter-spacing: 1.2px; text-transform: uppercase;">Premium Custom Clothing</p>
                             
                             <!-- Decorative Thread Line with Needle -->
                             <div style="margin: 0 auto; width: 100px; height: 3px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.7), transparent); border-radius: 2px; position: relative;">
                               <div style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 10px; height: 10px; background: rgba(255,255,255,0.8); border-radius: 50%; box-shadow: 0 0 8px rgba(255,255,255,0.5);"></div>
-                            </div>
-                            
-                            <!-- Scissors Icon -->
-                            <div style="margin-top: 20px; display: inline-block; padding: 10px 18px; background: rgba(255,255,255,0.2); border-radius: 24px; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.3);">
-                              <span style="color: #ffffff; font-size: 20px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));">✂️</span>
                             </div>
                           </td>
                         </tr>
@@ -490,7 +480,7 @@ export const emailService = {
    * Generate password reset email HTML template with luxury blue theme and tailoring/sewing design
    */
   generatePasswordResetEmailTemplate(firstName: string, resetUrl: string): string {
-    const logoUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/icon/sewing-machine.png`;
+    const logoUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/logo/logo.png`;
     return `
       <!DOCTYPE html>
       <html lang="en">
@@ -519,20 +509,15 @@ export const emailService = {
                       
                       <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                         <tr>
-                          <td style="padding: 50px 30px 45px; text-align: center; position: relative;">
-                            <!-- Decorative Thread Spools -->
-                            <div style="position: absolute; top: 20px; left: 30px; width: 35px; height: 35px; border: 2px solid rgba(255,255,255,0.25); border-radius: 50%;"></div>
-                            <div style="position: absolute; top: 30px; right: 40px; width: 28px; height: 28px; border: 2px solid rgba(255,255,255,0.2); border-radius: 50%;"></div>
-                            <div style="position: absolute; bottom: 20px; left: 50px; width: 22px; height: 22px; border: 2px solid rgba(255,255,255,0.2); border-radius: 50%;"></div>
-                            
+                          <td style="padding: 26px 24px 22px; text-align: center; position: relative;">
                             <!-- Logo Container -->
-                            <div style="margin: 0 auto 25px; width: 85px; height: 85px; background-color: #ffffff; border-radius: 18px; display: inline-block; padding: 14px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2), 0 2px 8px rgba(0, 0, 0, 0.1); border: 3px solid rgba(255, 255, 255, 0.4);">
-                              <img src="${logoUrl}" alt="Sequential Hub Logo" width="57" height="57" style="display: block; width: 57px; height: 57px; filter: brightness(0) invert(0.2);" />
+                            <div style="margin: 0 auto 14px; width: 56px; height: 56px; background-color: #ffffff; border-radius: 14px; display: inline-block; padding: 6px; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18); border: 1px solid rgba(255, 255, 255, 0.45);">
+                              <img src="${logoUrl}" alt="Sequential Hub Logo" width="44" height="44" style="display: block; width: 44px; height: 44px; border-radius: 12px;" />
                             </div>
                             
                             <!-- Brand Name -->
-                            <h1 style="margin: 0 0 10px 0; color: #ffffff; font-size: 28px; font-weight: 700; letter-spacing: 1px; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);">Sequential Hub</h1>
-                            <p style="margin: 0 0 20px 0; color: rgba(255, 255, 255, 0.95); font-size: 12px; font-weight: 400; letter-spacing: 2px; text-transform: uppercase;">Premium Custom Clothing</p>
+                            <h1 style="margin: 0 0 6px 0; color: #ffffff; font-size: 22px; font-weight: 700; letter-spacing: 0.4px; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.14);">Sequential Hub</h1>
+                            <p style="margin: 0 0 14px 0; color: rgba(255, 255, 255, 0.92); font-size: 12px; font-weight: 500; letter-spacing: 1.2px; text-transform: uppercase;">Premium Custom Clothing</p>
                             
                             <!-- Decorative Thread Line with Needle -->
                             <div style="margin: 0 auto; width: 100px; height: 3px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.7), transparent); border-radius: 2px; position: relative;">
@@ -668,7 +653,7 @@ export const emailService = {
   ): string {
     const appUrl = baseUrl || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
     const trackOrderLink = `${appUrl}/track-order/${orderNumber}`;
-    const logoUrl = `${appUrl}/icon/sewing-machine.png`;
+    const logoUrl = `${appUrl}/logo/logo.png`;
     const loginUrl = `${appUrl}/sign-in`;
     const accountOrdersUrl = `${appUrl}/account?tab=orders`;
     
@@ -700,20 +685,15 @@ export const emailService = {
                       
                       <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                         <tr>
-                          <td style="padding: 50px 30px 45px; text-align: center; position: relative;">
-                            <!-- Decorative Thread Spools -->
-                            <div style="position: absolute; top: 20px; left: 30px; width: 35px; height: 35px; border: 2px solid rgba(255,255,255,0.25); border-radius: 50%;"></div>
-                            <div style="position: absolute; top: 30px; right: 40px; width: 28px; height: 28px; border: 2px solid rgba(255,255,255,0.2); border-radius: 50%;"></div>
-                            <div style="position: absolute; bottom: 20px; left: 50px; width: 22px; height: 22px; border: 2px solid rgba(255,255,255,0.2); border-radius: 50%;"></div>
-                            
+                          <td style="padding: 26px 24px 22px; text-align: center; position: relative;">
                             <!-- Logo Container -->
-                            <div style="margin: 0 auto 25px; width: 85px; height: 85px; background-color: #ffffff; border-radius: 18px; display: inline-block; padding: 14px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2), 0 2px 8px rgba(0, 0, 0, 0.1); border: 3px solid rgba(255, 255, 255, 0.4);">
-                              <img src="${logoUrl}" alt="Sequential Hub Logo" width="57" height="57" style="display: block; width: 57px; height: 57px; filter: brightness(0) invert(0.2);" />
+                            <div style="margin: 0 auto 14px; width: 56px; height: 56px; background-color: #ffffff; border-radius: 14px; display: inline-block; padding: 6px; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18); border: 1px solid rgba(255, 255, 255, 0.45);">
+                              <img src="${logoUrl}" alt="Sequential Hub Logo" width="44" height="44" style="display: block; width: 44px; height: 44px; border-radius: 12px;" />
                             </div>
                             
                             <!-- Brand Name -->
-                            <h1 style="margin: 0 0 10px 0; color: #ffffff; font-size: 28px; font-weight: 700; letter-spacing: 1px; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);">Sequential Hub</h1>
-                            <p style="margin: 0 0 20px 0; color: rgba(255, 255, 255, 0.95); font-size: 12px; font-weight: 400; letter-spacing: 2px; text-transform: uppercase;">Premium Custom Clothing</p>
+                            <h1 style="margin: 0 0 6px 0; color: #ffffff; font-size: 22px; font-weight: 700; letter-spacing: 0.4px; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.14);">Sequential Hub</h1>
+                            <p style="margin: 0 0 14px 0; color: rgba(255, 255, 255, 0.92); font-size: 12px; font-weight: 500; letter-spacing: 1.2px; text-transform: uppercase;">Premium Custom Clothing</p>
                             
                             <!-- Decorative Thread Line with Needle -->
                             <div style="margin: 0 auto; width: 100px; height: 3px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.7), transparent); border-radius: 2px; position: relative;">

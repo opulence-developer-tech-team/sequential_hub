@@ -15,6 +15,7 @@ import { useAppDispatch } from '@/hooks/useAppDispatch'
 import { useHttp } from '@/hooks/useHttp'
 import { authActions } from '@/store/redux/auth/auth-slice'
 import { setUserData } from '@/store/redux/user/user-data-slice'
+import PwaInstallButton from '@/components/PwaInstallButton'
 
 export default function Header() {
   const router = useRouter()
@@ -520,6 +521,11 @@ export default function Header() {
               <Search className="h-5 w-5" />
             </motion.button>
 
+            {/* Install app (shown when supported) */}
+            <div className="hidden sm:block flex-shrink-0">
+              <PwaInstallButton variant="icon" />
+            </div>
+
             {/* User account / Auth buttons */}
             {!hasCheckedAuth ? (
               // Auth state loading - reserve space to avoid layout shift
@@ -739,6 +745,11 @@ export default function Header() {
                     {item.name}
                   </Link>
                 ))}
+
+                {/* Install app (mobile) */}
+                <div className="px-2 pt-1">
+                  <PwaInstallButton variant="full" />
+                </div>
                 
                 {/* Mobile Auth Buttons */}
                 {!hasCheckedAuth ? null : isAuthenticated ? (

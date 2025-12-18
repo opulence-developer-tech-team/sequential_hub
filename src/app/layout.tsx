@@ -1,8 +1,9 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import ClientProvider from "@/components/ui/ClientProvider";
 import ConditionalLayout from "@/components/ConditionalLayout";
 import { checkUserAuth } from "@/lib/server/auth";
+import PwaServiceWorkerRegister from "@/components/PwaServiceWorkerRegister";
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ||
@@ -51,6 +52,12 @@ export const metadata: Metadata = {
       "Your premier destination for custom-tailored clothing and accessories.",
     images: ["/logo/og-default.png"],
   },
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Sequential Hub",
+  },
   robots: {
     index: true,
     follow: true,
@@ -63,9 +70,17 @@ export const metadata: Metadata = {
     },
   },
   icons: {
-    icon: "/logo/logo.png",
-    apple: "/logo/logo.png",
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/pwa/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/pwa/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/pwa/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0071e3",
 };
 
 export default async function RootLayout({
@@ -79,6 +94,7 @@ export default async function RootLayout({
   return (
     <html lang="en" className="scroll-smooth">
       <body className="antialiased">
+        <PwaServiceWorkerRegister />
         <a href="#main-content" className="skip-link">
           Skip to main content
         </a>
