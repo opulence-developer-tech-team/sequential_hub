@@ -1337,7 +1337,7 @@ export default function AddProductModal({
         </div>
 
         {/* Footer - Fixed */}
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 bg-white sticky bottom-0">
+        <div className="flex items-center justify-end gap-3 px-6 pt-4 pb-4 border-t border-gray-200 bg-white sticky bottom-0 supports-[bottom:env(safe-area-inset-bottom)]:bottom-[env(safe-area-inset-bottom)] supports-[padding-bottom:env(safe-area-inset-bottom)]:pb-[calc(1rem+env(safe-area-inset-bottom))]">
           <button
             type="button"
             onClick={onClose}
