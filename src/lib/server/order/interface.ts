@@ -46,6 +46,7 @@ export interface IOrderItem {
     kneelLength?: number;
     roundKneel?: number;
     trouserLength?: number;
+    quarterLength?: number;
     ankle?: number;
   };
 }
@@ -96,6 +97,23 @@ export interface IOrder extends Document {
   monnifyPaymentReference?: string; // Monnify payment reference
   paymentUrl?: string; // Monnify checkout URL
   paidAt?: Date;
+  /**
+   * Reservation tracking (prevents oversell while user pays)
+   * - inventoryReservedAt: when stock was reserved for this order
+   * - inventoryReservationExpiresAt: when reservation should be released if unpaid
+   * - inventoryReservationReleasedAt: when reservation was actually released
+   */
+  inventoryReservedAt?: Date;
+  inventoryReservationExpiresAt?: Date;
+  inventoryReservationReleasedAt?: Date;
+  /**
+   * Inventory tracking (idempotency + audit)
+   * - inventoryDeductedAt: set once after variant quantities are successfully decremented
+   * - inventoryDeductionFailedAt/Error: set if payment is confirmed but inventory cannot be deducted (manual intervention required)
+   */
+  inventoryDeductedAt?: Date;
+  inventoryDeductionFailedAt?: Date;
+  inventoryDeductionError?: string;
   shippedAt?: Date;
   deliveredAt?: Date;
   cancelledAt?: Date;
@@ -163,6 +181,12 @@ export interface IOrderResponse {
   monnifyPaymentReference?: string;
   paymentUrl?: string;
   paidAt?: Date;
+  inventoryReservedAt?: Date;
+  inventoryReservationExpiresAt?: Date;
+  inventoryReservationReleasedAt?: Date;
+  inventoryDeductedAt?: Date;
+  inventoryDeductionFailedAt?: Date;
+  inventoryDeductionError?: string;
   shippedAt?: Date;
   deliveredAt?: Date;
   cancelledAt?: Date;

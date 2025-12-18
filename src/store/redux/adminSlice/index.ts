@@ -14,6 +14,7 @@ export interface ProductVariant {
   color: string;
   size: string;
   quantity: number;
+  reservedQuantity?: number;
   price: number;
   discountPrice: number;
   inStock: boolean;
@@ -31,6 +32,7 @@ export interface ProductVariant {
     kneelLength?: number;
     roundKneel?: number;
     trouserLength?: number;
+    quarterLength?: number;
     ankle?: number;
   };
 }

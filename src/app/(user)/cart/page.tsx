@@ -225,19 +225,21 @@ export default function CartPage() {
                         transition={{ delay: index * 0.05 }}
                         className="p-4 sm:p-6 lg:p-8 hover:bg-gray-50/50 transition-colors"
                       >
-                      <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-6">
+                      <div className="grid grid-cols-[96px_1fr] gap-4 sm:flex sm:flex-row sm:items-start sm:gap-6">
                         {/* Product Image */}
-                        <div className="flex-shrink-0 w-full sm:w-auto">
+                        <div className="flex-shrink-0">
                           <Link href={`/products/${item.productSlug}`}>
-                            <div className="relative h-24 w-24 sm:h-28 sm:w-28 rounded-xl overflow-hidden bg-gray-100 mx-auto sm:mx-0">
+                            <div className="relative h-24 w-24 sm:h-28 sm:w-28 rounded-xl overflow-hidden bg-gray-100">
                               <Image
                                 src={primaryImage}
                                 alt={item.productName}
                                 fill
-                                className="object-cover transition-transform hover:scale-105"
+                                className="object-cover transition-transform sm:hover:scale-105"
                                 unoptimized={isPlaceholderImage(primaryImage)}
                                 onError={(e) => {
-                                  e.currentTarget.src = 'https://via.placeholder.com/112x112?text=Product'
+                                  // NOTE: Next/Image doesn't support setting src directly like <img>.
+                                  // Keeping this handler to avoid noisy errors; fallback is handled by placeholder images elsewhere.
+                                  void e
                                 }}
                               />
                             </div>
@@ -245,22 +247,44 @@ export default function CartPage() {
                         </div>
 
                         {/* Product Details */}
-                        <div className="flex-1 min-w-0 w-full sm:w-auto">
-                          <Link
-                            href={`/products/${item.productSlug}`}
-                            className="text-base sm:text-lg font-semibold text-gray-900 hover:text-gray-700 transition-colors block mb-2"
-                          >
-                            {item.productName}
-                          </Link>
+                        <div className="min-w-0">
+                          <div className="flex items-start justify-between gap-3">
+                            <Link
+                              href={`/products/${item.productSlug}`}
+                              className="text-sm sm:text-lg font-semibold text-gray-900 hover:text-gray-700 transition-colors leading-snug"
+                            >
+                              {item.productName}
+                            </Link>
+                            <motion.button
+                              whileHover={{ scale: 1.08 }}
+                              whileTap={{ scale: 0.95 }}
+                              onClick={() => {
+                                const cartItem = cartItems.find(
+                                  (ci) => ci.variantId === item.variantId
+                                )
+                                if (cartItem) {
+                                  removeItem(cartItem.variantId)
+                                }
+                              }}
+                              disabled={isLoading}
+                              className="text-red-600 hover:text-red-700 disabled:opacity-50 disabled:cursor-not-allowed p-2 -m-2 rounded-xl hover:bg-red-50 transition-all flex-shrink-0 sm:hidden"
+                              aria-label="Remove item"
+                              title="Remove item"
+                            >
+                              <Trash2 className="h-5 w-5" />
+                            </motion.button>
+                          </div>
                           {item.productDescription && (
-                            <p className="text-xs sm:text-sm text-gray-500 mb-3 sm:mb-4 line-clamp-2 leading-relaxed">
+                            <p className="text-xs sm:text-sm text-gray-500 mt-1 mb-3 sm:mb-4 line-clamp-2 leading-relaxed">
                               {item.productDescription}
                             </p>
                           )}
                           
-                          <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs sm:text-sm text-gray-600 mb-3 sm:mb-4">
-                            <span className="font-medium">Size: <span className="font-normal">{item.variantSize}</span></span>
-                            <div className="flex items-center gap-2">
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs sm:text-sm text-gray-600 mb-3 sm:mb-4">
+                            <span className="font-medium">
+                              Size: <span className="font-normal">{item.variantSize}</span>
+                            </span>
+                            <div className="flex items-center gap-2 min-w-0">
                               <span className="font-medium">Color:</span>
                               {isValidHexColor(item.variantColor) ? (
                                 <div
@@ -285,8 +309,10 @@ export default function CartPage() {
                             </p>
                           )}
 
-                          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
-                            <div className="flex items-center justify-center sm:justify-start gap-3">
+                          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                            <div className="flex items-center justify-between sm:justify-start">
+                              <span className="text-xs text-gray-500 sm:hidden">Quantity</span>
+                              <div className="flex items-center gap-2">
                               <motion.button
                                 whileHover={{ scale: 1.1 }}
                                 whileTap={{ scale: 0.9 }}
@@ -299,11 +325,11 @@ export default function CartPage() {
                                   }
                                 }}
                                 disabled={!item.inStock || isLoading}
-                                className="p-2 border border-gray-300 rounded-xl hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                                className="p-2 sm:p-2.5 border border-gray-300 rounded-xl hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                               >
                                 <Minus className="h-4 w-4 text-gray-700" />
                               </motion.button>
-                              <span className="px-4 py-2 border border-gray-300 rounded-xl min-w-[60px] text-center font-medium text-gray-900 bg-white">
+                              <span className="px-3 py-2 sm:px-4 border border-gray-300 rounded-xl min-w-[52px] sm:min-w-[60px] text-center font-medium text-gray-900 bg-white">
                                 {item.quantity}
                               </span>
                               <motion.button
@@ -325,14 +351,16 @@ export default function CartPage() {
                                   isLoading || 
                                   item.quantity >= item.availableQuantity
                                 }
-                                className="p-2 border border-gray-300 rounded-xl hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                                className="p-2 sm:p-2.5 border border-gray-300 rounded-xl hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                               >
                                 <Plus className="h-4 w-4 text-gray-700" />
                               </motion.button>
+                              </div>
                             </div>
 
-                            <div className="flex items-center justify-between sm:justify-end gap-4">
+                            <div className="flex items-end justify-between sm:justify-end gap-4">
                               <div className="text-left sm:text-right">
+                                <span className="text-[11px] text-gray-500 block sm:hidden">Total</span>
                                 {item.variantDiscountPrice > 0 && 
                                  item.variantDiscountPrice < item.variantPrice ? (
                                   <>
@@ -361,7 +389,7 @@ export default function CartPage() {
                                   }
                                 }}
                                 disabled={isLoading}
-                                className="text-red-600 hover:text-red-700 disabled:opacity-50 disabled:cursor-not-allowed p-2 rounded-xl hover:bg-red-50 transition-all flex-shrink-0"
+                                className="hidden sm:inline-flex text-red-600 hover:text-red-700 disabled:opacity-50 disabled:cursor-not-allowed p-2 rounded-xl hover:bg-red-50 transition-all flex-shrink-0"
                               >
                                 <Trash2 className="h-5 w-5" />
                               </motion.button>

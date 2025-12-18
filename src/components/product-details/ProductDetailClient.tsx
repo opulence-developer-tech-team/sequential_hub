@@ -124,6 +124,10 @@ export default function ProductDetailClient() {
               typeof v.measurements?.trouserLength === 'number'
                 ? v.measurements.trouserLength
                 : undefined,
+            quarterLength:
+              typeof v.measurements?.quarterLength === 'number'
+                ? v.measurements.quarterLength
+                : undefined,
             ankle: typeof v.measurements?.ankle === 'number' ? v.measurements.ankle : undefined,
           }
         : undefined,

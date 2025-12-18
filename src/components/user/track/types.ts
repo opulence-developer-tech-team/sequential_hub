@@ -28,6 +28,7 @@ export interface RegularOrder {
         kneelLength?: number
         roundKneel?: number
         trouserLength?: number
+        quarterLength?: number
         ankle?: number
       } | null
     }>
@@ -95,6 +96,11 @@ export interface MeasurementOrder {
 }
 
 export type TrackedOrder = RegularOrder | MeasurementOrder
+
+
+
+
+
 
 
 

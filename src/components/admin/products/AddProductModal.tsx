@@ -68,6 +68,7 @@ interface ProductVariantData {
     kneelLength?: number
     roundKneel?: number
     trouserLength?: number
+    quarterLength?: number
     ankle?: number
   }
 }
@@ -480,6 +481,13 @@ export default function AddProductModal({
                     v.quantity >= 0
                       ? v.quantity
                       : null,
+                  reservedQuantity:
+                    v.reservedQuantity != null &&
+                    typeof v.reservedQuantity === "number" &&
+                    !isNaN(v.reservedQuantity) &&
+                    v.reservedQuantity >= 0
+                      ? v.reservedQuantity
+                      : 0,
                   price:
                     v.price != null &&
                     typeof v.price === "number" &&
@@ -530,7 +538,7 @@ export default function AddProductModal({
 
   return (
     <div 
-      className="fixed inset-0 z-50 overflow-hidden h-screen w-screen"
+      className="fixed inset-0 z-50 overflow-hidden min-h-[100svh] h-[100dvh] w-screen"
       onClick={(e) => {
         if (e.target === e.currentTarget) {
           onClose()
@@ -541,7 +549,7 @@ export default function AddProductModal({
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm h-full w-full" />
       
       {/* Modal Container */}
-      <div className="relative h-screen w-screen flex flex-col bg-white">
+      <div className="relative min-h-[100svh] h-[100dvh] w-screen flex flex-col bg-white">
         {/* Header - Fixed */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-white sticky top-0 z-10">
           <div>
@@ -761,14 +769,14 @@ export default function AddProductModal({
               {/* Image Preview Before Upload */}
               {imagePreview && selectedFile && (
                 <div className="mb-4 p-4 border border-gray-300 rounded-lg bg-gray-50">
-                  <div className="flex items-start gap-4">
-                    <div className="relative w-32 h-32 flex-shrink-0">
+                  <div className="flex flex-col sm:flex-row items-start gap-4">
+                    <div className="relative w-full sm:w-32 aspect-[4/3] sm:h-32 flex-shrink-0">
                       <Image
                         src={imagePreview}
                         alt="Preview"
                         fill
                         className="object-cover rounded-lg"
-                        sizes="128px"
+                        sizes="(max-width: 640px) 100vw, 128px"
                       />
                     </div>
                     <div className="flex-1">
@@ -824,42 +832,47 @@ export default function AddProductModal({
                       Images can be used by multiple variants. Not all images need to be assigned to variants.
                     </p>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
                     {uploadedImages.map((img, index) => (
                       <div
                         key={index}
-                        className="border border-gray-300 rounded-lg p-4 bg-white"
+                        className="group border border-gray-200 rounded-lg bg-white overflow-hidden shadow-sm"
                       >
-                        <div className="relative w-full h-48 mb-3">
+                        <div className="relative aspect-square w-full bg-gray-50">
                           <Image
                             src={img.preview || img.url}
                             alt={`Product image ${index + 1}`}
                             fill
-                            className="object-cover rounded-lg"
-                            sizes="(max-width: 640px) 100vw, 50vw"
+                            className="object-cover"
+                            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                             unoptimized={img.url.includes('via.placeholder.com')}
                           />
+                          {/* Delete button (overlay) */}
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteImage(index)}
+                            disabled={deletingImageIndex !== null}
+                            className="absolute top-2 right-2 inline-flex items-center justify-center rounded-full bg-white/95 border border-gray-200 shadow-sm p-2 text-red-600 hover:text-red-700 hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-opacity opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+                            aria-label="Delete image"
+                            title="Delete image"
+                          >
+                            {deletingImageIndex === index ? (
+                              <SewingMachineLoader size="sm" inline />
+                            ) : (
+                              <Trash2 className="h-4 w-4" />
+                            )}
+                          </button>
                         </div>
-
-                        {/* Delete Button */}
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteImage(index)}
-                          disabled={deletingImageIndex !== null}
-                          className="w-full px-3 py-2 text-sm font-medium text-red-700 bg-red-50 hover:bg-red-100 rounded-md transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          {deletingImageIndex === index ? (
-                            <>
-                              <SewingMachineLoader size="sm" inline className="mr-2" />
-                              Deleting...
-                            </>
-                          ) : (
-                            <>
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Delete Image
-                            </>
-                          )}
-                        </button>
+                        <div className="p-2">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-[11px] font-medium text-gray-700">
+                              Image {index + 1}
+                            </span>
+                            <span className="text-[10px] text-gray-500">
+                              {img.url.includes('via.placeholder.com') ? 'placeholder' : 'uploaded'}
+                            </span>
+                          </div>
+                        </div>
                       </div>
                     ))}
                   </div>

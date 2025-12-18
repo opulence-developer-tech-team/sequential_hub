@@ -145,6 +145,10 @@ class ProductValidator {
                 "number.base": "Trouser length must be a number.",
                 "number.min": "Trouser length cannot be negative.",
               }),
+              quarterLength: Joi.number().min(0).optional().messages({
+                "number.base": "Quarter length must be a number.",
+                "number.min": "Quarter length cannot be negative.",
+              }),
               ankle: Joi.number().min(0).optional().messages({
                 "number.base": "Ankle must be a number.",
                 "number.min": "Ankle cannot be negative.",
@@ -374,6 +378,10 @@ class ProductValidator {
               trouserLength: Joi.number().min(0).optional().messages({
                 "number.base": "Trouser length must be a number.",
                 "number.min": "Trouser length cannot be negative.",
+              }),
+              quarterLength: Joi.number().min(0).optional().messages({
+                "number.base": "Quarter length must be a number.",
+                "number.min": "Quarter length cannot be negative.",
               }),
               ankle: Joi.number().min(0).optional().messages({
                 "number.base": "Ankle must be a number.",

@@ -78,6 +78,15 @@ class PaymentController {
     body: IOrderUserInput
   ): Promise<NextResponse> {
     try {
+      // Opportunistically release expired reservations (serverless-friendly)
+      try {
+        await orderService.releaseExpiredInventoryReservations();
+      } catch (error) {
+        logger.warn("Failed to release expired inventory reservations (non-fatal)", {
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+
       // Create order first
       const order = await orderService.createOrder(userId, body);
 
@@ -175,6 +184,15 @@ class PaymentController {
         });
       }
 
+      if (err.message.includes("Insufficient available stock")) {
+        return utils.customResponse({
+          status: 400,
+          message: MessageResponse.Error,
+          description: err.message,
+          data: null,
+        });
+      }
+
       if (err.message.includes("email already exists")) {
         return utils.customResponse({
           status: 409,
@@ -201,6 +219,15 @@ class PaymentController {
     reference: string
   ): Promise<NextResponse> {
     try {
+      // Opportunistically release expired reservations (serverless-friendly)
+      try {
+        await orderService.releaseExpiredInventoryReservations();
+      } catch (error) {
+        logger.warn("Failed to release expired inventory reservations (non-fatal)", {
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+
       // Try to find order by transaction reference first (check both regular and measurement orders)
       let order = await orderService.findOrderByTransactionReference(reference);
       let measurementOrder = await measurementOrderService.findOrderByTransactionReference(reference);
@@ -426,6 +453,12 @@ class PaymentController {
           monnifyPaymentReference: orderData.monnifyPaymentReference,
           paymentUrl: orderData.paymentUrl,
           paidAt: orderData.paidAt,
+          inventoryReservedAt: (orderData as any).inventoryReservedAt,
+          inventoryReservationExpiresAt: (orderData as any).inventoryReservationExpiresAt,
+          inventoryReservationReleasedAt: (orderData as any).inventoryReservationReleasedAt,
+          inventoryDeductedAt: (orderData as any).inventoryDeductedAt,
+          inventoryDeductionFailedAt: (orderData as any).inventoryDeductionFailedAt,
+          inventoryDeductionError: (orderData as any).inventoryDeductionError,
           shippedAt: orderData.shippedAt,
           deliveredAt: orderData.deliveredAt,
           cancelledAt: orderData.cancelledAt,
@@ -443,17 +476,42 @@ class PaymentController {
         paymentStatus === PaymentStatus.Paid &&
         order.paymentStatus !== PaymentStatus.Paid;
 
-      if (
-        order.monnifyTransactionReference &&
-        (paymentStatus !== order.paymentStatus || !order.paidAt)
-      ) {
-        const updated = await orderService.updateOrderPaymentStatus(
-          order.monnifyTransactionReference,
-          paymentStatus,
-          paidAt
-        );
-        if (updated) {
-          updatedOrder = updated;
+      if (order.monnifyTransactionReference) {
+        // If payment is confirmed as paid, do a single idempotent "paid + inventory" finalize.
+        if (paymentStatus === PaymentStatus.Paid) {
+          const finalized = await orderService.confirmPaidAndDeductInventory(
+            order.monnifyTransactionReference,
+            paidAt
+          );
+          if (finalized) {
+            updatedOrder = finalized;
+          }
+        } else if (
+          paymentStatus === PaymentStatus.Failed ||
+          paymentStatus === PaymentStatus.Cancelled
+        ) {
+          // Update payment status and release any held reservation
+          const updated = await orderService.updateOrderPaymentStatus(
+            order.monnifyTransactionReference,
+            paymentStatus,
+            paidAt
+          );
+          if (updated) {
+            updatedOrder = updated;
+          }
+          await orderService.releaseInventoryReservationByTransactionReference(
+            order.monnifyTransactionReference,
+            paymentStatus === PaymentStatus.Failed ? "payment_failed" : "payment_cancelled"
+          );
+        } else if (paymentStatus !== order.paymentStatus || !order.paidAt) {
+          const updated = await orderService.updateOrderPaymentStatus(
+            order.monnifyTransactionReference,
+            paymentStatus,
+            paidAt
+          );
+          if (updated) {
+            updatedOrder = updated;
+          }
         }
       }
 
@@ -530,6 +588,15 @@ class PaymentController {
     signature: string
   ): Promise<NextResponse> {
     try {
+      // Opportunistically release expired reservations (serverless-friendly)
+      try {
+        await orderService.releaseExpiredInventoryReservations();
+      } catch (error) {
+        logger.warn("Failed to release expired inventory reservations (non-fatal)", {
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+
       // Verify webhook signature
       const payloadString = JSON.stringify(payload);
       const isValidSignature = paymentService.verifyWebhookSignature(
@@ -562,10 +629,39 @@ class PaymentController {
       }
 
       // Only process successful payment events
-      if (
-        webhookData.eventType !== "SUCCESSFUL_TRANSACTION" &&
-        webhookData.eventData.paymentStatus !== "PAID"
-      ) {
+      const webhookPaymentStatus = String(
+        webhookData.eventData.paymentStatus || ""
+      ).toUpperCase();
+
+      const isPaidEvent =
+        webhookData.eventType === "SUCCESSFUL_TRANSACTION" ||
+        webhookPaymentStatus === "PAID";
+
+      // Handle FAILED/CANCELLED events by releasing reservation early (optional but recommended)
+      if (!isPaidEvent) {
+        if (webhookPaymentStatus === "FAILED") {
+          await orderService.updateOrderPaymentStatus(
+            webhookData.eventData.transactionReference,
+            PaymentStatus.Failed
+          );
+          await orderService.releaseInventoryReservationByTransactionReference(
+            webhookData.eventData.transactionReference,
+            "payment_failed"
+          );
+        } else if (
+          webhookPaymentStatus === "CANCELLED" ||
+          webhookPaymentStatus === "USER_CANCELLED"
+        ) {
+          await orderService.updateOrderPaymentStatus(
+            webhookData.eventData.transactionReference,
+            PaymentStatus.Cancelled
+          );
+          await orderService.releaseInventoryReservationByTransactionReference(
+            webhookData.eventData.transactionReference,
+            "payment_cancelled"
+          );
+        }
+
         logger.info("Webhook event ignored", {
           eventType: webhookData.eventType,
           paymentStatus: webhookData.eventData.paymentStatus,
@@ -615,9 +711,9 @@ class PaymentController {
         // Handle regular order
         const wasPaymentJustConfirmed = order.paymentStatus !== PaymentStatus.Paid;
 
-        const updatedOrder = await orderService.updateOrderPaymentStatus(
+        // Idempotent "paid + inventory" finalize (webhooks can be retried)
+        const updatedOrder = await orderService.confirmPaidAndDeductInventory(
           webhookData.eventData.transactionReference,
-          PaymentStatus.Paid,
           paidAt
         );
 

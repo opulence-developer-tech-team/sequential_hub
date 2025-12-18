@@ -16,6 +16,7 @@ export const MEASUREMENT_FIELDS = [
   'kneelLength',
   'roundKneel',
   'trouserLength',
+  'quarterLength',
   'ankle',
 ] as const
 
@@ -35,6 +36,7 @@ export const MEASUREMENT_LABELS: Record<MeasurementField, string> = {
   kneelLength: 'Kneel length',
   roundKneel: 'Round kneel',
   trouserLength: 'Trouser length',
+  quarterLength: 'Quarter length',
   ankle: 'Ankle',
 }
 
@@ -144,6 +146,11 @@ export default function VariantMeasurementsEditor({
     </div>
   )
 }
+
+
+
+
+
 
 
 

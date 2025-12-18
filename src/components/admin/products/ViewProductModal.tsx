@@ -53,6 +53,22 @@ export default function ViewProductModal({
   
   // Calculate total quantity from all variants
   const totalQuantity = product.productVariant.reduce((sum, variant) => sum + (variant.quantity || 0), 0)
+  const totalReservedQuantity = product.productVariant.reduce(
+    (sum, variant) =>
+      sum +
+      (typeof (variant as any).reservedQuantity === 'number' && !Number.isNaN((variant as any).reservedQuantity)
+        ? (variant as any).reservedQuantity
+        : 0),
+    0
+  )
+  const totalAvailableQuantity = product.productVariant.reduce((sum, variant) => {
+    const qty = typeof variant.quantity === 'number' ? variant.quantity : 0
+    const reserved =
+      typeof (variant as any).reservedQuantity === 'number' && !Number.isNaN((variant as any).reservedQuantity)
+        ? (variant as any).reservedQuantity
+        : 0
+    return sum + Math.max(0, qty - reserved)
+  }, 0)
 
   // Use variants directly for image-color pairs (each variant has its own image and color)
   const variants = product.productVariant || []
@@ -76,7 +92,7 @@ export default function ViewProductModal({
 
   return (
     <div 
-      className="fixed inset-0 z-50 overflow-hidden h-screen w-screen"
+      className="fixed inset-0 z-50 overflow-hidden min-h-[100svh] h-[100dvh] w-screen"
       onClick={(e) => {
         if (e.target === e.currentTarget) {
           onClose()
@@ -87,7 +103,7 @@ export default function ViewProductModal({
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm h-full w-full" />
       
       {/* Modal Container */}
-      <div className="relative h-screen w-screen flex flex-col bg-white">
+      <div className="relative min-h-[100svh] h-[100dvh] w-screen flex flex-col bg-white">
         {/* Header - Fixed */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-white sticky top-0 z-10">
           <h3 className="text-xl font-bold text-gray-900">Product Details</h3>
@@ -126,8 +142,8 @@ export default function ViewProductModal({
                 </div>
               </div>
               
-              {/* Pricing Summary */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 p-4 bg-gray-50 rounded-lg">
+              {/* Pricing & Inventory Summary */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6 p-4 bg-gray-50 rounded-lg">
                 <div>
                   <span className="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1">Starting Price</span>
                   <span className="text-2xl font-bold text-primary-600">{formatPrice(minPrice)}</span>
@@ -153,6 +169,16 @@ export default function ViewProductModal({
                   <span className="text-2xl font-bold text-gray-900">{totalQuantity}</span>
                   <span className="text-sm text-gray-600 ml-1">units</span>
                 </div>
+                <div>
+                  <span className="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1">Available / Reserved</span>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-2xl font-bold text-gray-900">{totalAvailableQuantity}</span>
+                    <span className="text-sm text-gray-500">avail</span>
+                    <span className="text-sm text-gray-400">•</span>
+                    <span className="text-base font-semibold text-gray-700">{totalReservedQuantity}</span>
+                    <span className="text-sm text-gray-500">reserved</span>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -170,6 +196,12 @@ export default function ViewProductModal({
                     ? Math.round(((baseDiscount - basePrice) / baseDiscount) * 100)
                     : 0;
                   
+                  const reservedQty =
+                    typeof (variant as any).reservedQuantity === 'number' && !Number.isNaN((variant as any).reservedQuantity)
+                      ? (variant as any).reservedQuantity
+                      : 0
+                  const qty = typeof variant.quantity === 'number' ? variant.quantity : 0
+                  const availableQty = Math.max(0, qty - reservedQty)
                   return (
                     <div
                       key={variant._id || index}
@@ -261,6 +293,14 @@ export default function ViewProductModal({
                             <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Quantity</span>
                             <span className="text-sm text-gray-900 font-semibold">{variant.quantity} units</span>
                           </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Available</span>
+                            <span className="text-sm text-gray-900 font-semibold">{availableQty} units</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Reserved</span>
+                            <span className="text-sm text-gray-700 font-medium">{reservedQty} units</span>
+                          </div>
                         </div>
                         
                         {variant.measurements && Object.keys(variant.measurements).length > 0 && (
@@ -307,6 +347,9 @@ export default function ViewProductModal({
                               )}
                               {variant.measurements.trouserLength !== undefined && (
                                 <span>Trouser length: {variant.measurements.trouserLength}</span>
+                              )}
+                              {variant.measurements.quarterLength !== undefined && (
+                                <span>Quarter length: {variant.measurements.quarterLength}</span>
                               )}
                               {variant.measurements.ankle !== undefined && (
                                 <span>Ankle: {variant.measurements.ankle}</span>

@@ -78,6 +78,7 @@ const orderItemSchema = new Schema(
       kneelLength: { type: Number, min: 0 },
       roundKneel: { type: Number, min: 0 },
       trouserLength: { type: Number, min: 0 },
+      quarterLength: { type: Number, min: 0 },
       ankle: { type: Number, min: 0 },
     },
   },
@@ -202,6 +203,36 @@ const orderSchema = new Schema<IOrder>(
     },
     paidAt: {
       type: Date,
+    },
+    /**
+     * Reservation tracking (prevents oversell while user pays)
+     */
+    inventoryReservedAt: {
+      type: Date,
+      index: true,
+    },
+    inventoryReservationExpiresAt: {
+      type: Date,
+      index: true,
+    },
+    inventoryReservationReleasedAt: {
+      type: Date,
+      index: true,
+    },
+    /**
+     * Inventory tracking (idempotency + audit)
+     */
+    inventoryDeductedAt: {
+      type: Date,
+      index: true,
+    },
+    inventoryDeductionFailedAt: {
+      type: Date,
+      index: true,
+    },
+    inventoryDeductionError: {
+      type: String,
+      trim: true,
     },
     shippedAt: {
       type: Date,

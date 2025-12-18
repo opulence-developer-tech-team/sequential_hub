@@ -74,6 +74,7 @@ interface ProductVariantData {
     kneelLength?: number
     roundKneel?: number
     trouserLength?: number
+    quarterLength?: number
     ankle?: number
   }
 }
@@ -215,6 +216,7 @@ export default function EditProductModal({
               kneelLength: typeof variant.measurements?.kneelLength === 'number' ? variant.measurements.kneelLength : undefined,
               roundKneel: typeof variant.measurements?.roundKneel === 'number' ? variant.measurements.roundKneel : undefined,
               trouserLength: typeof variant.measurements?.trouserLength === 'number' ? variant.measurements.trouserLength : undefined,
+              quarterLength: typeof variant.measurements?.quarterLength === 'number' ? variant.measurements.quarterLength : undefined,
               ankle: typeof variant.measurements?.ankle === 'number' ? variant.measurements.ankle : undefined,
             },
           }
@@ -643,6 +645,7 @@ export default function EditProductModal({
                       kneelLength: typeof v.measurements?.kneelLength === 'number' ? v.measurements.kneelLength : undefined,
                       roundKneel: typeof v.measurements?.roundKneel === 'number' ? v.measurements.roundKneel : undefined,
                       trouserLength: typeof v.measurements?.trouserLength === 'number' ? v.measurements.trouserLength : undefined,
+                      quarterLength: typeof v.measurements?.quarterLength === 'number' ? v.measurements.quarterLength : undefined,
                       ankle: typeof v.measurements?.ankle === 'number' ? v.measurements.ankle : undefined,
                     },
                   }
@@ -683,6 +686,7 @@ export default function EditProductModal({
                 kneelLength: v.measurements?.kneelLength,
                 roundKneel: v.measurements?.roundKneel,
                 trouserLength: v.measurements?.trouserLength,
+                quarterLength: v.measurements?.quarterLength,
                 ankle: v.measurements?.ankle,
               },
             }
@@ -757,7 +761,7 @@ export default function EditProductModal({
 
   return (
     <div 
-      className="fixed inset-0 z-50 overflow-hidden h-screen w-screen"
+      className="fixed inset-0 z-50 overflow-hidden min-h-[100svh] h-[100dvh] w-screen"
       onClick={(e) => {
         if (e.target === e.currentTarget) {
           onClose()
@@ -768,7 +772,7 @@ export default function EditProductModal({
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm h-full w-full" />
       
       {/* Modal Container */}
-      <div className="relative h-screen w-screen flex flex-col bg-white">
+      <div className="relative min-h-[100svh] h-[100dvh] w-screen flex flex-col bg-white">
         {/* Header - Fixed */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-white sticky top-0 z-10">
           <h3 className="text-xl font-bold text-gray-900">Edit Product</h3>
@@ -1806,6 +1810,7 @@ export default function EditProductModal({
                                                           kneelLength: typeof v.measurements?.kneelLength === 'number' ? v.measurements.kneelLength : undefined,
                                                           roundKneel: typeof v.measurements?.roundKneel === 'number' ? v.measurements.roundKneel : undefined,
                                                           trouserLength: typeof v.measurements?.trouserLength === 'number' ? v.measurements.trouserLength : undefined,
+                                                          quarterLength: typeof v.measurements?.quarterLength === 'number' ? v.measurements.quarterLength : undefined,
                                                           ankle: typeof v.measurements?.ankle === 'number' ? v.measurements.ankle : undefined,
                                                         },
                                                       }

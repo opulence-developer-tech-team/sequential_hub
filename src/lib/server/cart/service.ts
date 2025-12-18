@@ -455,6 +455,13 @@ class CartService {
         const variantPrice = Number(variant.price);
         const variantDiscountPrice = Number(variant.discountPrice);
         const variantQuantity = Number(variant.quantity);
+        const variantReserved =
+          typeof (variant as any).reservedQuantity === "number" &&
+          !isNaN(Number((variant as any).reservedQuantity)) &&
+          Number((variant as any).reservedQuantity) >= 0
+            ? Number((variant as any).reservedQuantity)
+            : 0;
+        const availableQuantity = Math.max(0, variantQuantity - variantReserved);
         const itemQuantity = Number(originalItem.quantity);
 
         // Validate normalized values
@@ -509,8 +516,9 @@ class CartService {
           quantity: itemQuantity,
           itemSubtotal, // Subtotal before discount
           itemTotal, // Total after discount
-          inStock: Boolean(variant.inStock),
-          availableQuantity: variantQuantity,
+          // Inventory is available if quantity minus reservations is > 0
+          inStock: availableQuantity > 0 && Boolean(variant.inStock),
+          availableQuantity,
           measurements: variant.measurements
             ? {
                 neck: typeof variant.measurements.neck === 'number' ? variant.measurements.neck : undefined,
@@ -526,6 +534,7 @@ class CartService {
                 kneelLength: typeof variant.measurements.kneelLength === 'number' ? variant.measurements.kneelLength : undefined,
                 roundKneel: typeof variant.measurements.roundKneel === 'number' ? variant.measurements.roundKneel : undefined,
                 trouserLength: typeof variant.measurements.trouserLength === 'number' ? variant.measurements.trouserLength : undefined,
+                quarterLength: typeof variant.measurements.quarterLength === 'number' ? variant.measurements.quarterLength : undefined,
                 ankle: typeof variant.measurements.ankle === 'number' ? variant.measurements.ankle : undefined,
               }
             : undefined,

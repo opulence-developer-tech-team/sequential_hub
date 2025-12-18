@@ -119,6 +119,10 @@ export default function AdminProductsPage() {
           color: variant.color,
           size: variant.size as ProductSize, // Cast string to ProductSize
           quantity: variant.quantity,
+          reservedQuantity:
+            typeof variantAny.reservedQuantity === 'number' && !Number.isNaN(variantAny.reservedQuantity) && variantAny.reservedQuantity >= 0
+              ? variantAny.reservedQuantity
+              : 0,
           price: variant.price,
           discountPrice: variant.discountPrice,
           inStock: variant.inStock,

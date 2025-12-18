@@ -30,6 +30,7 @@ export interface WishlistProduct {
       kneelLength?: number;
       roundKneel?: number;
       trouserLength?: number;
+      quarterLength?: number;
       ankle?: number;
     };
   }>;
