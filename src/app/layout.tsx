@@ -4,6 +4,7 @@ import ClientProvider from "@/components/ui/ClientProvider";
 import ConditionalLayout from "@/components/ConditionalLayout";
 import { checkUserAuth } from "@/lib/server/auth";
 import PwaServiceWorkerRegister from "@/components/PwaServiceWorkerRegister";
+import PwaInstallOverlay from "@/components/PwaInstallOverlay";
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ||
@@ -95,6 +96,7 @@ export default async function RootLayout({
     <html lang="en" className="scroll-smooth">
       <body className="antialiased">
         <PwaServiceWorkerRegister />
+        <PwaInstallOverlay />
         <a href="#main-content" className="skip-link">
           Skip to main content
         </a>
