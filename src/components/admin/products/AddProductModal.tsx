@@ -481,13 +481,6 @@ export default function AddProductModal({
                     v.quantity >= 0
                       ? v.quantity
                       : null,
-                  reservedQuantity:
-                    v.reservedQuantity != null &&
-                    typeof v.reservedQuantity === "number" &&
-                    !isNaN(v.reservedQuantity) &&
-                    v.reservedQuantity >= 0
-                      ? v.reservedQuantity
-                      : 0,
                   price:
                     v.price != null &&
                     typeof v.price === "number" &&

@@ -313,51 +313,56 @@ export default function AdminCustomersPage() {
       </div>
 
       {/* Filters and Search */}
-      <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 mb-6">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
-          <div className="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search customers..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              />
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 sm:p-6 mb-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          {/* Controls */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 w-full lg:max-w-3xl">
+            {/* Search */}
+            <div className="w-full">
+              <label className="block text-xs font-medium text-gray-600 mb-1">
+                Search
+              </label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search customers..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-gray-900 placeholder:text-gray-400"
+                />
+              </div>
             </div>
-            <div className="flex items-center space-x-2">
-              <Filter className="h-4 w-4 text-gray-400" />
-              <div className="flex flex-col">
-                <label htmlFor="status-filter-select" className="text-xs text-gray-500 mb-1">
-                  Status
-                </label>
+
+            {/* Status */}
+            <div className="w-full">
+              <label htmlFor="status-filter-select" className="block text-xs font-medium text-gray-600 mb-1">
+                Status
+              </label>
+              <div className="relative">
+                <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <select
                   id="status-filter-select"
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white text-gray-900"
-                  style={{ color: '#111827', backgroundColor: 'white' }}
+                  className="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white text-gray-900"
                 >
-                  <option value="all" style={{ color: '#111827', backgroundColor: 'white' }}>
-                    All Status
-                  </option>
-                  <option value="active" style={{ color: '#111827', backgroundColor: 'white' }}>
-                    Active
-                  </option>
-                  <option value="inactive" style={{ color: '#111827', backgroundColor: 'white' }}>
-                    Inactive
-                  </option>
-                  <option value="pending" style={{ color: '#111827', backgroundColor: 'white' }}>
-                    Pending
-                  </option>
+                  <option value="all">All Status</option>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                  <option value="pending">Pending</option>
                 </select>
               </div>
             </div>
           </div>
-          <div className="flex items-center space-x-2">
-            <span className="text-sm text-gray-600">
-              {users.length} of {pagination.total || users.length} customers
+
+          {/* Count */}
+          <div className="flex items-center justify-between sm:justify-end text-sm text-gray-600">
+            <span className="inline-flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2 border border-gray-200">
+              <span className="font-semibold text-gray-900">{users.length}</span>
+              <span className="text-gray-500">of</span>
+              <span className="font-semibold text-gray-900">{pagination.total || users.length}</span>
+              <span className="text-gray-500">customers</span>
             </span>
           </div>
         </div>

@@ -205,21 +205,6 @@ const orderSchema = new Schema<IOrder>(
       type: Date,
     },
     /**
-     * Reservation tracking (prevents oversell while user pays)
-     */
-    inventoryReservedAt: {
-      type: Date,
-      index: true,
-    },
-    inventoryReservationExpiresAt: {
-      type: Date,
-      index: true,
-    },
-    inventoryReservationReleasedAt: {
-      type: Date,
-      index: true,
-    },
-    /**
      * Inventory tracking (idempotency + audit)
      */
     inventoryDeductedAt: {

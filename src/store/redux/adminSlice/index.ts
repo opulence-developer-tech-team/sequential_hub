@@ -14,7 +14,6 @@ export interface ProductVariant {
   color: string;
   size: string;
   quantity: number;
-  reservedQuantity?: number;
   price: number;
   discountPrice: number;
   inStock: boolean;

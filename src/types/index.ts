@@ -5,7 +5,6 @@ export interface IProductVariant {
   imageUrls: string[]; // Array of image URLs for the variant (multiple angles, details, etc.)
   color: string;
   quantity: number | null; // null indicates invalid/missing data
-  reservedQuantity?: number | null; // units reserved for in-progress checkouts
   price: number | null; // null indicates invalid/missing data
   discountPrice: number | null; // null indicates invalid/missing data
   size: ProductSize;

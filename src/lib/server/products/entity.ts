@@ -33,16 +33,6 @@ const productVariantSchema = new Schema(
       required: true,
       min: 0,
     },
-    /**
-     * Reserved units held for in-progress checkouts.
-     * This prevents overselling without permanently reducing quantity.
-     */
-    reservedQuantity: {
-      type: Number,
-      required: true,
-      default: 0,
-      min: 0,
-    },
     price: {
       type: Number,
       required: true,

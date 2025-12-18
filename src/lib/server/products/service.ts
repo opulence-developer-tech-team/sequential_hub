@@ -192,27 +192,6 @@ class ProductService {
   public async editProductById(input: IEditProductInput) {
     const { productId, productVariant, ...updateData } = input;
 
-    // IMPORTANT:
-    // productVariant updates replace the whole array. If we don't explicitly preserve
-    // `reservedQuantity` for existing variants, admin edits can accidentally wipe
-    // active checkout reservations and cause overselling.
-    const existingProduct = await Product.findById(productId)
-      .select("productVariant._id productVariant.reservedQuantity")
-      .lean();
-
-    const reservedByVariantId = new Map<string, number>();
-    if (existingProduct?.productVariant && Array.isArray(existingProduct.productVariant)) {
-      for (const v of existingProduct.productVariant as any[]) {
-        const id = v?._id?.toString?.();
-        if (!id) continue;
-        const rq =
-          typeof v.reservedQuantity === "number" && !Number.isNaN(v.reservedQuantity) && v.reservedQuantity >= 0
-            ? v.reservedQuantity
-            : 0;
-        reservedByVariantId.set(id, rq);
-      }
-    }
-
     // Process productVariant to ensure _id fields are properly handled
     // Convert string _id to ObjectId if present, or let Mongoose generate new ones
     const processedVariants = productVariant.map((variant: any) => {
@@ -226,17 +205,6 @@ class ProductService {
         color: variant.color,
         size: variant.size,
         quantity: variant.quantity,
-        // Preserve existing reservedQuantity for variants that already exist
-        // (new variants default to 0)
-        reservedQuantity: (() => {
-          const id =
-            variant._id && typeof variant._id === "object" && typeof variant._id.toString === "function"
-              ? variant._id.toString()
-              : typeof variant._id === "string"
-                ? variant._id
-                : undefined;
-          return id ? (reservedByVariantId.get(id) ?? 0) : 0;
-        })(),
         price: variant.price,
         discountPrice: variant.discountPrice,
         inStock: variant.inStock,
@@ -306,12 +274,6 @@ class ProductService {
           color: variant.color,
           size: variant.size,
           quantity: variant.quantity,
-          reservedQuantity:
-            typeof variant.reservedQuantity === "number" &&
-            !Number.isNaN(variant.reservedQuantity) &&
-            variant.reservedQuantity >= 0
-              ? variant.reservedQuantity
-              : 0,
           price: variant.price,
           discountPrice: variant.discountPrice,
           inStock: variant.inStock,

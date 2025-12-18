@@ -5,7 +5,6 @@ interface IProductVariant {
   imageUrls: string[]; // Array of image URLs for the variant (multiple angles, details, etc.)
   color: string;
   quantity: number;
-  reservedQuantity?: number;
   price: number;
   discountPrice: number;
   size: ProductSize;

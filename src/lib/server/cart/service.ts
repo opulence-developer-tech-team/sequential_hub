@@ -455,13 +455,6 @@ class CartService {
         const variantPrice = Number(variant.price);
         const variantDiscountPrice = Number(variant.discountPrice);
         const variantQuantity = Number(variant.quantity);
-        const variantReserved =
-          typeof (variant as any).reservedQuantity === "number" &&
-          !isNaN(Number((variant as any).reservedQuantity)) &&
-          Number((variant as any).reservedQuantity) >= 0
-            ? Number((variant as any).reservedQuantity)
-            : 0;
-        const availableQuantity = Math.max(0, variantQuantity - variantReserved);
         const itemQuantity = Number(originalItem.quantity);
 
         // Validate normalized values
@@ -516,9 +509,8 @@ class CartService {
           quantity: itemQuantity,
           itemSubtotal, // Subtotal before discount
           itemTotal, // Total after discount
-          // Inventory is available if quantity minus reservations is > 0
-          inStock: availableQuantity > 0 && Boolean(variant.inStock),
-          availableQuantity,
+          inStock: Boolean(variant.inStock),
+          availableQuantity: variantQuantity,
           measurements: variant.measurements
             ? {
                 neck: typeof variant.measurements.neck === 'number' ? variant.measurements.neck : undefined,

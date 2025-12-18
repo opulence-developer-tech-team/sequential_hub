@@ -65,16 +65,6 @@ export default function ProductsTable({
               
               const variants = Array.isArray(product.productVariant) ? product.productVariant : []
               const totalQty = variants.reduce((sum, v) => sum + (typeof v.quantity === 'number' ? v.quantity : 0), 0)
-              const totalReserved = variants.reduce((sum, v) => {
-                const rq = (v as any).reservedQuantity
-                return sum + (typeof rq === 'number' && !Number.isNaN(rq) && rq >= 0 ? rq : 0)
-              }, 0)
-              const totalAvailable = variants.reduce((sum, v) => {
-                const q = typeof v.quantity === 'number' ? v.quantity : 0
-                const rq = (v as any).reservedQuantity
-                const reserved = typeof rq === 'number' && !Number.isNaN(rq) && rq >= 0 ? rq : 0
-                return sum + Math.max(0, q - reserved)
-              }, 0)
 
               return (
               <tr key={product._id} className="hover:bg-gray-50">
@@ -90,9 +80,7 @@ export default function ProductsTable({
                       {descriptionPreview}
                     </div>
                     <div className="text-xs text-gray-400 mt-1">
-                      Stock: <span className="font-semibold text-gray-700">{totalAvailable}</span> available •{' '}
-                      <span className="font-medium text-gray-600">{totalReserved}</span> reserved •{' '}
-                      <span className="text-gray-500">{totalQty}</span> total
+                      Stock: <span className="font-semibold text-gray-700">{totalQty}</span> units
                     </div>
                     {/* Show category on mobile */}
                     <div className="text-xs text-gray-400 sm:hidden">

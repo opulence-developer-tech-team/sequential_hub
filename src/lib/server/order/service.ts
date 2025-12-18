@@ -16,12 +16,6 @@ import Product from "../products/entity";
 
 class OrderService {
   /**
-   * How long we hold inventory for an unpaid checkout.
-   * Keep it short to avoid locking stock during abandonment.
-   */
-  private static readonly INVENTORY_RESERVATION_TTL_MS = 15 * 60 * 1000; // 15 minutes
-
-  /**
    * Generate unique order number
    * Format: ORD-YYYYMMDD-XXXXXX (where XXXXXX is random alphanumeric)
    */
@@ -289,68 +283,38 @@ class OrderService {
           : undefined,
       }));
 
-      // Reserve inventory + create order atomically.
-      // This prevents overselling during the payment window.
-      const reservationNow = new Date();
-      const reservationExpiresAt = new Date(
-        reservationNow.getTime() + OrderService.INVENTORY_RESERVATION_TTL_MS
-      );
+      // Create order document
+      const order = new Order({
+        orderNumber,
+        userId: userId || null,
+        isGuest,
+        guestEmail: isGuest ? shippingAddress.email : undefined,
+        items: orderItems,
+        shippingAddress: shippingAddress,
+        billingAddress,
+        subtotal: cartCalculation.subtotal,
+        shipping: cartCalculation.shipping,
+        tax: cartCalculation.tax,
+        total: cartCalculation.total,
+        shippingLocation: body.shippingLocation,
+        orderStatus: OrderStatus.OrderPlaced,
+        paymentStatus: PaymentStatus.Pending,
+        paymentMethod: "monnify",
+      });
 
-      const session = await mongoose.startSession();
+      const savedOrder = await order.save();
 
-      try {
-        const savedOrder = (await session.withTransaction(async () => {
-          await this.reserveInventoryForCartItems(
-            cartCalculation.items.map((i) => ({
-              productId: i.productId,
-              variantId: i.variantId,
-              quantity: i.quantity,
-            })),
-            session
-          );
+      logger.info("Order created successfully", {
+        orderId: savedOrder._id.toString(),
+        orderNumber: savedOrder.orderNumber,
+        userId: userId?.toString() || "guest",
+        guestEmail: isGuest ? shippingAddress.email : undefined,
+        total: savedOrder.total,
+        itemCount: savedOrder.items.length,
+      });
 
-          const order = new Order({
-            orderNumber,
-            userId: userId || null,
-            isGuest,
-            guestEmail: isGuest ? shippingAddress.email : undefined,
-            items: orderItems,
-            shippingAddress: shippingAddress,
-            billingAddress,
-            subtotal: cartCalculation.subtotal,
-            shipping: cartCalculation.shipping,
-            tax: cartCalculation.tax,
-            total: cartCalculation.total,
-            shippingLocation: body.shippingLocation,
-            orderStatus: OrderStatus.OrderPlaced,
-            paymentStatus: PaymentStatus.Pending,
-            paymentMethod: "monnify",
-            inventoryReservedAt: reservationNow,
-            inventoryReservationExpiresAt: reservationExpiresAt,
-          });
-
-          return (await order.save({ session })) as unknown as IOrder;
-        })) as unknown as IOrder | null;
-
-        if (!savedOrder) {
-          throw new Error("Failed to create order");
-        }
-
-        logger.info("Order created successfully", {
-          orderId: savedOrder._id.toString(),
-          orderNumber: savedOrder.orderNumber,
-          userId: userId?.toString() || "guest",
-          guestEmail: isGuest ? shippingAddress.email : undefined,
-          total: savedOrder.total,
-          itemCount: savedOrder.items.length,
-          reservationExpiresAt: reservationExpiresAt.toISOString(),
-        });
-
-        // Convert to response format
-        return this.mapOrderToResponse(savedOrder);
-      } finally {
-        session.endSession();
-      }
+      // Convert to response format
+      return this.mapOrderToResponse(savedOrder);
     } catch (error: any) {
       const err = error instanceof Error ? error : new Error(String(error));
       logger.error("Error creating order", err, {
@@ -505,10 +469,6 @@ class OrderService {
         orderDoc.orderStatus = OrderStatus.Processing;
         orderDoc.paidAt = orderDoc.paidAt || paidAt || new Date();
 
-        const reservationWasHeld =
-          Boolean((orderDoc as any).inventoryReservedAt) &&
-          !Boolean((orderDoc as any).inventoryReservationReleasedAt);
-
         const alreadyDeducted = Boolean((orderDoc as any).inventoryDeductedAt);
         if (alreadyDeducted) {
           // Clear any previous failure markers if we already succeeded
@@ -592,20 +552,6 @@ class OrderService {
                 `Insufficient stock: product ${productIdStr}, variant ${variantIdStr} (need ${qty}, have ${currentQty})`
               );
             }
-
-            if (reservationWasHeld) {
-              const reservedQty =
-                typeof variant.reservedQuantity === "number" &&
-                !Number.isNaN(variant.reservedQuantity) &&
-                variant.reservedQuantity >= 0
-                  ? variant.reservedQuantity
-                  : 0;
-              if (reservedQty < qty) {
-                validationErrors.push(
-                  `Reservation mismatch: product ${productIdStr}, variant ${variantIdStr} (need reserved ${qty}, have reserved ${reservedQty})`
-                );
-              }
-            }
           }
         }
 
@@ -645,17 +591,6 @@ class OrderService {
             );
             if (!variant) continue;
 
-            // Consume reservation if it was held
-            if (reservationWasHeld) {
-              const currentReserved =
-                typeof variant.reservedQuantity === "number" &&
-                !Number.isNaN(variant.reservedQuantity) &&
-                variant.reservedQuantity >= 0
-                  ? variant.reservedQuantity
-                  : 0;
-              variant.reservedQuantity = Math.max(0, currentReserved - qty);
-            }
-
             const currentQty =
               typeof variant.quantity === "number" && !Number.isNaN(variant.quantity)
                 ? variant.quantity
@@ -663,16 +598,8 @@ class OrderService {
             const nextQty = Math.max(0, currentQty - qty);
             variant.quantity = nextQty;
 
-            const nextReserved =
-              typeof variant.reservedQuantity === "number" &&
-              !Number.isNaN(variant.reservedQuantity) &&
-              variant.reservedQuantity >= 0
-                ? variant.reservedQuantity
-                : 0;
-            const nextAvailable = Math.max(0, nextQty - nextReserved);
-
-            // Keep inStock aligned with available units (prevents selling reserved units)
-            variant.inStock = nextAvailable > 0;
+            // Update inStock based on remaining quantity
+            variant.inStock = nextQty > 0;
           }
         }
 
@@ -683,11 +610,6 @@ class OrderService {
 
         // Mark inventory deduction success
         (orderDoc as any).inventoryDeductedAt = new Date();
-        // Reservation is consumed as part of deduction (if it existed)
-        if (reservationWasHeld) {
-          (orderDoc as any).inventoryReservationReleasedAt =
-            (orderDoc as any).inventoryReservationReleasedAt || new Date();
-        }
         (orderDoc as any).inventoryDeductionFailedAt = undefined;
         (orderDoc as any).inventoryDeductionError = undefined;
 
@@ -1045,9 +967,6 @@ class OrderService {
       monnifyPaymentReference: order.monnifyPaymentReference,
       paymentUrl: order.paymentUrl,
       paidAt: order.paidAt,
-      inventoryReservedAt: (order as any).inventoryReservedAt,
-      inventoryReservationExpiresAt: (order as any).inventoryReservationExpiresAt,
-      inventoryReservationReleasedAt: (order as any).inventoryReservationReleasedAt,
       inventoryDeductedAt: (order as any).inventoryDeductedAt,
       inventoryDeductionFailedAt: (order as any).inventoryDeductionFailedAt,
       inventoryDeductionError: (order as any).inventoryDeductionError,
@@ -1060,262 +979,6 @@ class OrderService {
     };
   }
 
-  /**
-   * Reserve inventory for a pending checkout.
-   * This increments variant.reservedQuantity and updates variant.inStock based on availability.
-   *
-   * Must be called inside a transaction to be concurrency-safe.
-   */
-  private async reserveInventoryForCartItems(
-    items: Array<{ productId: string; variantId: string; quantity: number }>,
-    session: mongoose.ClientSession
-  ): Promise<void> {
-    const required = new Map<string, Map<string, number>>();
-    for (const item of items) {
-      const productId = String(item.productId || "");
-      const variantId = String(item.variantId || "");
-      const qty = typeof item.quantity === "number" ? item.quantity : 0;
-      if (!productId || !variantId || qty <= 0) continue;
-      if (!Types.ObjectId.isValid(productId) || !Types.ObjectId.isValid(variantId)) {
-        throw new Error("Invalid productId or variantId in cart items");
-      }
-      if (!required.has(productId)) required.set(productId, new Map());
-      const perVariant = required.get(productId)!;
-      perVariant.set(variantId, (perVariant.get(variantId) || 0) + qty);
-    }
-
-    const productIds = Array.from(required.keys()).map((id) => new Types.ObjectId(id));
-    const products = await Product.find({ _id: { $in: productIds } }).session(session);
-
-    const productsById = new Map<string, any>();
-    for (const p of products) productsById.set(p._id.toString(), p);
-
-    // Validate all first (no partial reserve)
-    const errors: string[] = [];
-    for (const [productId, variantsMap] of required.entries()) {
-      const product = productsById.get(productId);
-      if (!product) {
-        errors.push(`Product not found: ${productId}`);
-        continue;
-      }
-      const variantArray: any[] = Array.isArray(product.productVariant)
-        ? product.productVariant
-        : [];
-
-      for (const [variantId, qty] of variantsMap.entries()) {
-        const variant = variantArray.find((v) => v?._id?.toString?.() === variantId);
-        if (!variant) {
-          errors.push(`Variant not found: product ${productId}, variant ${variantId}`);
-          continue;
-        }
-
-        const currentQty =
-          typeof variant.quantity === "number" && !Number.isNaN(variant.quantity) && variant.quantity >= 0
-            ? variant.quantity
-            : 0;
-        const currentReserved =
-          typeof variant.reservedQuantity === "number" &&
-          !Number.isNaN(variant.reservedQuantity) &&
-          variant.reservedQuantity >= 0
-            ? variant.reservedQuantity
-            : 0;
-        const available = Math.max(0, currentQty - currentReserved);
-
-        if (available < qty) {
-          errors.push(
-            `Insufficient available stock: product ${productId}, variant ${variantId} (need ${qty}, available ${available})`
-          );
-        }
-      }
-    }
-
-    if (errors.length > 0) {
-      throw new Error(errors.slice(0, 5).join(" | "));
-    }
-
-    // Apply reserves
-    for (const [productId, variantsMap] of required.entries()) {
-      const product = productsById.get(productId);
-      if (!product) continue;
-      const variantArray: any[] = Array.isArray(product.productVariant)
-        ? product.productVariant
-        : [];
-
-      for (const [variantId, qty] of variantsMap.entries()) {
-        const variant = variantArray.find((v) => v?._id?.toString?.() === variantId);
-        if (!variant) continue;
-
-        const currentReserved =
-          typeof variant.reservedQuantity === "number" &&
-          !Number.isNaN(variant.reservedQuantity) &&
-          variant.reservedQuantity >= 0
-            ? variant.reservedQuantity
-            : 0;
-        variant.reservedQuantity = currentReserved + qty;
-
-        const currentQty =
-          typeof variant.quantity === "number" && !Number.isNaN(variant.quantity) && variant.quantity >= 0
-            ? variant.quantity
-            : 0;
-        const nextAvailable = Math.max(0, currentQty - variant.reservedQuantity);
-        variant.inStock = nextAvailable > 0;
-      }
-
-      await product.save({ session });
-    }
-  }
-
-  /**
-   * Release inventory reservation for an unpaid order.
-   * Used on expiry and on failed/cancelled payments.
-   */
-  public async releaseInventoryReservationByTransactionReference(
-    transactionReference: string,
-    reason: "expired" | "payment_failed" | "payment_cancelled"
-  ): Promise<IOrderResponse | null> {
-    const session = await mongoose.startSession();
-    try {
-      let response: IOrderResponse | null = null;
-      await session.withTransaction(async () => {
-        const orderDoc = await Order.findOne({
-          monnifyTransactionReference: transactionReference,
-        }).session(session);
-
-        if (!orderDoc) {
-          response = null;
-          return;
-        }
-
-        // Never release a paid order's reservation
-        if (orderDoc.paymentStatus === PaymentStatus.Paid) {
-          response = this.mapOrderToResponse(orderDoc.toObject() as any);
-          return;
-        }
-
-        const wasReserved = Boolean((orderDoc as any).inventoryReservedAt);
-        const alreadyReleased = Boolean((orderDoc as any).inventoryReservationReleasedAt);
-
-        if (!wasReserved || alreadyReleased) {
-          if (reason === "expired") {
-            orderDoc.orderStatus = OrderStatus.Cancelled;
-            orderDoc.cancelledAt = orderDoc.cancelledAt || new Date();
-            orderDoc.cancellationReason =
-              orderDoc.cancellationReason || "Reservation expired";
-            await orderDoc.save({ session });
-          }
-          response = this.mapOrderToResponse(orderDoc.toObject() as any);
-          return;
-        }
-
-        // Build required quantities from order items
-        const required = new Map<string, Map<string, number>>();
-        for (const item of orderDoc.items as any[]) {
-          const productIdStr = item?.productId?.toString?.() || "";
-          const variantIdStr = String(item?.variantId || "");
-          const qty = typeof item?.quantity === "number" ? item.quantity : 0;
-          if (!productIdStr || !variantIdStr || qty <= 0) continue;
-          if (!required.has(productIdStr)) required.set(productIdStr, new Map());
-          const perVariant = required.get(productIdStr)!;
-          perVariant.set(variantIdStr, (perVariant.get(variantIdStr) || 0) + qty);
-        }
-
-        const productIds = Array.from(required.keys())
-          .filter((id) => Types.ObjectId.isValid(id))
-          .map((id) => new Types.ObjectId(id));
-
-        const products = await Product.find({ _id: { $in: productIds } }).session(session);
-        const productsById = new Map<string, any>();
-        for (const p of products) productsById.set(p._id.toString(), p);
-
-        for (const [productIdStr, variantsMap] of required.entries()) {
-          const product = productsById.get(productIdStr);
-          if (!product) continue;
-
-          for (const [variantIdStr, qty] of variantsMap.entries()) {
-            const variant = (product.productVariant as any[])?.find(
-              (v: any) => v?._id?.toString?.() === variantIdStr
-            );
-            if (!variant) continue;
-
-            const currentReserved =
-              typeof variant.reservedQuantity === "number" &&
-              !Number.isNaN(variant.reservedQuantity) &&
-              variant.reservedQuantity >= 0
-                ? variant.reservedQuantity
-                : 0;
-            variant.reservedQuantity = Math.max(0, currentReserved - qty);
-
-            const currentQty =
-              typeof variant.quantity === "number" && !Number.isNaN(variant.quantity) && variant.quantity >= 0
-                ? variant.quantity
-                : 0;
-            const nextAvailable = Math.max(0, currentQty - variant.reservedQuantity);
-            variant.inStock = nextAvailable > 0;
-          }
-
-          await product.save({ session });
-        }
-
-        (orderDoc as any).inventoryReservationReleasedAt = new Date();
-
-        if (reason === "expired") {
-          orderDoc.orderStatus = OrderStatus.Cancelled;
-          orderDoc.cancelledAt = orderDoc.cancelledAt || new Date();
-          orderDoc.cancellationReason =
-            orderDoc.cancellationReason || "Reservation expired";
-        }
-
-        await orderDoc.save({ session });
-        response = this.mapOrderToResponse(orderDoc.toObject() as any);
-      });
-
-      return response;
-    } finally {
-      session.endSession();
-    }
-  }
-
-  /**
-   * Opportunistic cleanup: release reservations that have expired.
-   * (Useful in serverless environments without background workers.)
-   */
-  public async releaseExpiredInventoryReservations(limit: number = 25): Promise<{
-    scanned: number;
-    released: number;
-  }> {
-    const now = new Date();
-
-    const expired = await Order.find({
-      paymentStatus: PaymentStatus.Pending,
-      inventoryReservedAt: { $exists: true, $ne: null },
-      inventoryReservationExpiresAt: { $lt: now },
-      $or: [
-        { inventoryReservationReleasedAt: { $exists: false } },
-        { inventoryReservationReleasedAt: null },
-      ],
-    })
-      .select("_id monnifyTransactionReference")
-      .limit(limit)
-      .lean();
-
-    let released = 0;
-    for (const o of expired) {
-      const txRef = (o as any).monnifyTransactionReference;
-      if (!txRef) continue;
-      try {
-        await this.releaseInventoryReservationByTransactionReference(txRef, "expired");
-        released += 1;
-      } catch (error) {
-        logger.warn("Failed to release expired reservation", {
-          orderId: (o as any)._id?.toString?.(),
-          transactionReference: txRef,
-          error: error instanceof Error ? error.message : String(error),
-        });
-      }
-    }
-
-    return { scanned: expired.length, released };
-  }
 }
 
 export const orderService = new OrderService();

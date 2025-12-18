@@ -53,22 +53,6 @@ export default function ViewProductModal({
   
   // Calculate total quantity from all variants
   const totalQuantity = product.productVariant.reduce((sum, variant) => sum + (variant.quantity || 0), 0)
-  const totalReservedQuantity = product.productVariant.reduce(
-    (sum, variant) =>
-      sum +
-      (typeof (variant as any).reservedQuantity === 'number' && !Number.isNaN((variant as any).reservedQuantity)
-        ? (variant as any).reservedQuantity
-        : 0),
-    0
-  )
-  const totalAvailableQuantity = product.productVariant.reduce((sum, variant) => {
-    const qty = typeof variant.quantity === 'number' ? variant.quantity : 0
-    const reserved =
-      typeof (variant as any).reservedQuantity === 'number' && !Number.isNaN((variant as any).reservedQuantity)
-        ? (variant as any).reservedQuantity
-        : 0
-    return sum + Math.max(0, qty - reserved)
-  }, 0)
 
   // Use variants directly for image-color pairs (each variant has its own image and color)
   const variants = product.productVariant || []
@@ -169,16 +153,6 @@ export default function ViewProductModal({
                   <span className="text-2xl font-bold text-gray-900">{totalQuantity}</span>
                   <span className="text-sm text-gray-600 ml-1">units</span>
                 </div>
-                <div>
-                  <span className="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1">Available / Reserved</span>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-2xl font-bold text-gray-900">{totalAvailableQuantity}</span>
-                    <span className="text-sm text-gray-500">avail</span>
-                    <span className="text-sm text-gray-400">•</span>
-                    <span className="text-base font-semibold text-gray-700">{totalReservedQuantity}</span>
-                    <span className="text-sm text-gray-500">reserved</span>
-                  </div>
-                </div>
               </div>
             </div>
 
@@ -196,12 +170,7 @@ export default function ViewProductModal({
                     ? Math.round(((baseDiscount - basePrice) / baseDiscount) * 100)
                     : 0;
                   
-                  const reservedQty =
-                    typeof (variant as any).reservedQuantity === 'number' && !Number.isNaN((variant as any).reservedQuantity)
-                      ? (variant as any).reservedQuantity
-                      : 0
                   const qty = typeof variant.quantity === 'number' ? variant.quantity : 0
-                  const availableQty = Math.max(0, qty - reservedQty)
                   return (
                     <div
                       key={variant._id || index}
@@ -294,12 +263,8 @@ export default function ViewProductModal({
                             <span className="text-sm text-gray-900 font-semibold">{variant.quantity} units</span>
                           </div>
                           <div className="flex items-center justify-between">
-                            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Available</span>
-                            <span className="text-sm text-gray-900 font-semibold">{availableQty} units</span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Reserved</span>
-                            <span className="text-sm text-gray-700 font-medium">{reservedQty} units</span>
+                            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Quantity</span>
+                            <span className="text-sm text-gray-900 font-semibold">{qty} units</span>
                           </div>
                         </div>
                         
