@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -45,6 +45,11 @@ export default function Hero() {
   const [currentSlide, setCurrentSlide] = useState(0)
   const [isAutoPlaying, setIsAutoPlaying] = useState(true)
   const freeShippingThreshold = useAppSelector((state) => state.shippingSettings.freeShippingThreshold) ?? 0
+  const resumeAutoplayTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const touchStartXRef = useRef<number | null>(null)
+  const touchStartYRef = useRef<number | null>(null)
+  const touchLastXRef = useRef<number | null>(null)
+  const touchLastYRef = useRef<number | null>(null)
 
   const trustIndicators = [
     { icon: Truck, text: 'Free Shipping', subtext: `On orders over ${formatPrice(freeShippingThreshold)}` },
@@ -63,28 +68,94 @@ export default function Hero() {
     return () => clearInterval(interval)
   }, [isAutoPlaying])
 
+  const pauseAutoplayTemporarily = (ms: number = 10000) => {
+    setIsAutoPlaying(false)
+    if (resumeAutoplayTimeoutRef.current) {
+      clearTimeout(resumeAutoplayTimeoutRef.current)
+    }
+    resumeAutoplayTimeoutRef.current = setTimeout(() => {
+      setIsAutoPlaying(true)
+      resumeAutoplayTimeoutRef.current = null
+    }, ms)
+  }
+
+  useEffect(() => {
+    return () => {
+      if (resumeAutoplayTimeoutRef.current) {
+        clearTimeout(resumeAutoplayTimeoutRef.current)
+      }
+    }
+  }, [])
+
   const goToSlide = (index: number) => {
     setCurrentSlide(index)
-    setIsAutoPlaying(false)
-    setTimeout(() => setIsAutoPlaying(true), 10000)
+    pauseAutoplayTemporarily()
   }
 
   const nextSlide = () => {
     setCurrentSlide((prev) => (prev + 1) % heroSlides.length)
-    setIsAutoPlaying(false)
-    setTimeout(() => setIsAutoPlaying(true), 10000)
+    pauseAutoplayTemporarily()
   }
 
   const prevSlide = () => {
     setCurrentSlide((prev) => (prev - 1 + heroSlides.length) % heroSlides.length)
-    setIsAutoPlaying(false)
-    setTimeout(() => setIsAutoPlaying(true), 10000)
+    pauseAutoplayTemporarily()
+  }
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const t = e.touches[0]
+    if (!t) return
+    touchStartXRef.current = t.clientX
+    touchStartYRef.current = t.clientY
+    touchLastXRef.current = t.clientX
+    touchLastYRef.current = t.clientY
+  }
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    const t = e.touches[0]
+    if (!t) return
+    touchLastXRef.current = t.clientX
+    touchLastYRef.current = t.clientY
+  }
+
+  const handleTouchEnd = () => {
+    const startX = touchStartXRef.current
+    const startY = touchStartYRef.current
+    const endX = touchLastXRef.current
+    const endY = touchLastYRef.current
+
+    touchStartXRef.current = null
+    touchStartYRef.current = null
+    touchLastXRef.current = null
+    touchLastYRef.current = null
+
+    if (startX == null || startY == null || endX == null || endY == null) return
+
+    const dx = endX - startX
+    const dy = endY - startY
+
+    // Only treat it as a swipe if it's primarily horizontal and exceeds threshold.
+    const SWIPE_THRESHOLD_PX = 50
+    const isHorizontalSwipe = Math.abs(dx) > Math.abs(dy) * 1.2
+    if (!isHorizontalSwipe || Math.abs(dx) < SWIPE_THRESHOLD_PX) return
+
+    if (dx < 0) {
+      nextSlide() // swipe left -> next
+    } else {
+      prevSlide() // swipe right -> previous
+    }
   }
 
   return (
     <div className="relative w-full bg-white">
       {/* Main Hero Carousel */}
-      <div className="relative h-[400px] md:h-[450px] lg:h-[500px] overflow-hidden">
+      <div
+        className="relative h-[400px] md:h-[450px] lg:h-[500px] overflow-hidden"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        style={{ touchAction: 'pan-y' }}
+      >
         <AnimatePresence mode="wait">
           {heroSlides.map((slide, index) => {
             if (index !== currentSlide) return null
@@ -185,14 +256,14 @@ export default function Hero() {
         <button
           onClick={prevSlide}
           aria-label="Previous slide"
-          className="absolute left-4 top-1/2 -translate-y-1/2 z-20 p-3 bg-white/20 backdrop-blur-sm rounded-full hover:bg-white/30 transition-all duration-200 text-white"
+          className="hidden md:inline-flex absolute left-4 top-1/2 -translate-y-1/2 z-20 p-3 bg-white/20 backdrop-blur-sm rounded-full hover:bg-white/30 transition-all duration-200 text-white"
         >
           <ArrowLeft className="h-6 w-6" />
         </button>
         <button
           onClick={nextSlide}
           aria-label="Next slide"
-          className="absolute right-4 top-1/2 -translate-y-1/2 z-20 p-3 bg-white/20 backdrop-blur-sm rounded-full hover:bg-white/30 transition-all duration-200 text-white"
+          className="hidden md:inline-flex absolute right-4 top-1/2 -translate-y-1/2 z-20 p-3 bg-white/20 backdrop-blur-sm rounded-full hover:bg-white/30 transition-all duration-200 text-white"
         >
           <ArrowRight className="h-6 w-6" />
         </button>

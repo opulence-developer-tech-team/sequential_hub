@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Shop Custom Tailored Clothing & Ready-to-Wear in Nigeria',
+  title: 'Shop Custom Tailored Clothing & Ready-to-Wear',
   description:
     'Browse premium clothing and accessories in Nigeria. Choose your size and color, or request made-to-measure tailoring with your measurements.',
   alternates: {

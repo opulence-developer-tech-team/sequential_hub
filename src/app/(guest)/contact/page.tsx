@@ -122,7 +122,7 @@ export default function ContactPage() {
           transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
           className="mb-10 sm:mb-14 flex flex-col md:flex-row md:items-center md:justify-between gap-6"
         >
-          <div className="flex items-center gap-4">
+          <div className="flex items-start gap-4">
             <div className="relative h-14 w-14 rounded-2xl bg-gradient-to-br from-primary-600 via-primary-700 to-primary-900 shadow-lg flex items-center justify-center overflow-hidden">
               <Image
                 src="/icon/sewing-machine.png"
@@ -396,15 +396,15 @@ export default function ContactPage() {
                   </p>
                 )}
 
-                <div className="flex items-center justify-between pt-2">
-                  <p className="text-[11px] text-gray-400 max-w-xs">
+                <div className="pt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-[11px] text-gray-400 max-w-none sm:max-w-xs">
                     By submitting this form, you agree that we may contact you regarding your
                     request and related tailoring services.
                   </p>
                   <button
                     type="submit"
                     disabled={isLoading}
-                    className="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+                    className="w-full sm:w-auto justify-center inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
                   >
                     {isLoading ? (
                       <>

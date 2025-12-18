@@ -10,16 +10,16 @@ import Newsletter from '@/components/Newsletter'
 import { getFeaturedProducts, getProducts } from '@/lib/get-products'
 
 export const metadata: Metadata = {
-  title: 'Custom Tailoring & Premium Clothing in Nigeria',
+  title: 'Custom Tailoring & Premium Clothing',
   description:
-    'Shop premium ready-to-wear pieces and request made-to-measure tailoring. Share your measurements online and get your outfit delivered in Nigeria.',
+    'Shop premium ready-to-wear pieces and request made-to-measure tailoring. Share your measurements online and get your outfit delivered world wide.',
   alternates: {
     canonical: '/',
   },
   openGraph: {
     title: 'Sequential Hub - Custom Tailoring & Premium Clothing',
     description:
-      'Premium ready-to-wear and made-to-measure tailoring. Share your measurements online and get delivery in Nigeria.',
+      'Premium ready-to-wear and made-to-measure tailoring. Share your measurements online and get delivery world wide.',
     url: '/',
     images: [
       {
@@ -33,7 +33,7 @@ export const metadata: Metadata = {
   twitter: {
     title: 'Sequential Hub - Custom Tailoring & Premium Clothing',
     description:
-      'Premium ready-to-wear and made-to-measure tailoring. Share your measurements online and get delivery in Nigeria.',
+      'Premium ready-to-wear and made-to-measure tailoring. Share your measurements online and get delivery world wide.',
     images: ['/logo/og-default.png'],
   },
 }

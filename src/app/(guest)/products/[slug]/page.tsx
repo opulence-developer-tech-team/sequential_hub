@@ -75,7 +75,7 @@ export async function generateMetadata({
     const ogImage = image ? toAbsoluteUrl(image) : DEFAULT_OG_IMAGE
 
     return {
-      title: `${name} | Buy Online in Nigeria`,
+      title: `${name} | Buy Online`,
       description,
       alternates: { canonical: canonicalPath },
       openGraph: {

@@ -61,8 +61,8 @@ import { AdminRole } from "./enum";
 import { IAdmin } from "./interface";
 
 const DEFAULT_ADMIN = {
-  email: process.env.DEFAULT_ADMIN_EMAIL || "admin@sequentialhub.com",
-  password: process.env.DEFAULT_ADMIN_PASSWORD || "admin123",
+  email: "admin@sequentialhub.com",
+  password: "admin@12356#",
   adminRole: AdminRole.SuperAdmin,
 };
 
