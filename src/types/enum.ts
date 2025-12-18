@@ -1,0 +1,30 @@
+export enum ClothingCategory {
+    Packet_Shirt = "packet_shirt",
+    Vintage_Shirt = "vintage_shirt",
+    Plain_Pant = "plain_pant",
+    Jogger = "jogger",
+    Senator = "senator",
+    Kaftan = "kaftan",
+    Agbada = "agbada",
+  }
+
+  export enum ProductSize {
+  XS = "XS",
+  S = "S",
+  M = "M",
+  L = "L",
+  XL = "XL",
+  XXL = "XXL",
+  XXXL = "XXXL",
+  _28 = "28",
+  _30 = "30",
+  _32 = "32",
+  _34 = "34",
+  _36 = "36",
+  _38 = "38",
+  _40 = "40",
+  _42 = "42",
+  _44 = "44",
+  _46 = "46",
+  one_size = "One Size",
+}

@@ -1,0 +1,48 @@
+{
+  "name": "sequential-hub",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "seed:admin": "tsx src/lib/server/admin/seed.ts"
+  },
+  "dependencies": {
+    "@reduxjs/toolkit": "^2.11.1",
+    "@types/nodemailer": "^7.0.4",
+    "axios": "^1.13.2",
+    "cloudinary": "^2.8.0",
+    "clsx": "^2.1.1",
+    "dotenv": "^16.6.1",
+    "framer-motion": "^11.0.0",
+    "joi": "^18.0.2",
+    "jsonwebtoken": "^9.0.3",
+    "lucide-react": "^0.555.0",
+    "mongoose": "^9.0.1",
+    "next": "^16.0.7",
+    "nodemailer": "^7.0.11",
+    "react": "^19",
+    "react-dom": "^19",
+    "react-redux": "^9.2.0",
+    "redux-persist": "^6.0.0",
+    "sharp": "^0.34.5",
+    "sonner": "^2.0.7",
+    "tailwind-merge": "^1.14.0",
+    "uuid": "^13.0.0"
+  },
+  "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^22",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "autoprefixer": "^10.4.16",
+    "eslint": "^9",
+    "eslint-config-next": "^16.0.7",
+    "postcss": "^8",
+    "tailwindcss": "^3.4.18",
+    "tsx": "^4.7.0",
+    "typescript": "^5"
+  }
+}
