@@ -25,24 +25,19 @@ function isInStandaloneMode(): boolean {
 }
 
 const DISMISS_KEY = 'pwa_install_dismissed_at'
-const DISMISS_DAYS = 7
+const PERMANENT_DISMISS_KEY = 'pwa_install_permanently_dismissed'
 
-function recentlyDismissed(): boolean {
+function isPermanentlyDismissed(): boolean {
   try {
-    const raw = localStorage.getItem(DISMISS_KEY)
-    if (!raw) return false
-    const ts = Number(raw)
-    if (!Number.isFinite(ts)) return false
-    const diffMs = Date.now() - ts
-    return diffMs < DISMISS_DAYS * 24 * 60 * 60 * 1000
+    return localStorage.getItem(PERMANENT_DISMISS_KEY) === 'true'
   } catch {
     return false
   }
 }
 
-function markDismissed() {
+function markPermanentlyDismissed() {
   try {
-    localStorage.setItem(DISMISS_KEY, String(Date.now()))
+    localStorage.setItem(PERMANENT_DISMISS_KEY, 'true')
   } catch {
     // ignore
   }
@@ -64,12 +59,20 @@ export default function PwaInstallOverlay() {
   useEffect(() => {
     setInstalled(isInStandaloneMode())
 
+    // Clear old dismiss key from previous version so users who cancelled before will see it again
+    // Only permanent dismissal should prevent showing the dialog now
+    try {
+      localStorage.removeItem(DISMISS_KEY)
+    } catch {
+      // ignore
+    }
+
     const onBeforeInstallPrompt = (e: Event) => {
       e.preventDefault()
       setDeferredPrompt(e as BeforeInstallPromptEvent)
 
-      // Don’t auto-popup constantly; only auto-open if user hasn’t dismissed recently.
-      if (!isInStandaloneMode() && !recentlyDismissed()) {
+      // Only check for permanent dismissal - previous cancellations won't prevent showing
+      if (!isInStandaloneMode() && !isPermanentlyDismissed()) {
         setOpen(true)
       }
     }
@@ -82,6 +85,7 @@ export default function PwaInstallOverlay() {
 
     const onOpenInstall = () => {
       if (isInStandaloneMode()) return
+      if (isPermanentlyDismissed()) return
       setOpen(true)
     }
 
@@ -105,7 +109,12 @@ export default function PwaInstallOverlay() {
 
   const close = () => {
     setOpen(false)
-    markDismissed()
+    // Don't mark as dismissed - this allows it to show again on page refresh
+  }
+
+  const handlePermanentDismiss = () => {
+    markPermanentlyDismissed()
+    setOpen(false)
   }
 
   const handleInstall = async () => {
@@ -123,8 +132,8 @@ export default function PwaInstallOverlay() {
         setInstalled(true)
         setOpen(false)
       } else {
-        // user dismissed native prompt
-        markDismissed()
+        // user dismissed native prompt - just close, don't prevent showing again
+        setOpen(false)
       }
     } finally {
       setDeferredPrompt(null)
@@ -213,24 +222,34 @@ export default function PwaInstallOverlay() {
               </div>
             )}
 
-            <div className="mt-5 flex flex-col sm:flex-row gap-3 sm:justify-end">
-              <button
-                type="button"
-                onClick={close}
-                className="w-full sm:w-auto inline-flex items-center justify-center rounded-xl border border-apple-gray-200 bg-white px-4 py-3 text-sm font-semibold text-apple-gray-900 hover:bg-apple-gray-50 transition-colors"
-              >
-                Not now
-              </button>
-
+            <div className="mt-5 flex flex-col gap-3">
               <button
                 type="button"
                 onClick={isIos ? close : handleInstall}
                 disabled={!deferredPrompt && !isIos}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-primary-600 px-5 py-3 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+                className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-primary-600 px-5 py-3 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
               >
                 <Download className="h-5 w-5" />
                 {isIos ? 'Got it' : isInstalling ? 'Opening…' : 'Install app'}
               </button>
+
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button
+                  type="button"
+                  onClick={close}
+                  className="w-full sm:w-auto inline-flex items-center justify-center rounded-xl border border-apple-gray-200 bg-white px-4 py-3 text-sm font-semibold text-apple-gray-900 hover:bg-apple-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handlePermanentDismiss}
+                  className="w-full sm:w-auto inline-flex items-center justify-center rounded-xl border border-apple-gray-200 bg-white px-4 py-3 text-sm font-semibold text-apple-gray-600 hover:bg-apple-gray-50 transition-colors"
+                >
+                  Don't show this again
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -238,6 +257,9 @@ export default function PwaInstallOverlay() {
     </div>
   )
 }
+
+
+
 
 
 
