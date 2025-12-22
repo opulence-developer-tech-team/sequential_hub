@@ -26,6 +26,7 @@ function isInStandaloneMode(): boolean {
 
 const DISMISS_KEY = 'pwa_install_dismissed_at'
 const PERMANENT_DISMISS_KEY = 'pwa_install_permanently_dismissed'
+const WAS_INSTALLED_KEY = 'pwa_was_installed'
 
 function isPermanentlyDismissed(): boolean {
   try {
@@ -43,10 +44,79 @@ function markPermanentlyDismissed() {
   }
 }
 
+function wasEverInstalled(): boolean {
+  try {
+    return localStorage.getItem(WAS_INSTALLED_KEY) === 'true'
+  } catch {
+    return false
+  }
+}
+
+function markAsInstalled() {
+  try {
+    localStorage.setItem(WAS_INSTALLED_KEY, 'true')
+  } catch {
+    // ignore
+  }
+}
+
+function clearPermanentDismissal() {
+  try {
+    localStorage.removeItem(PERMANENT_DISMISS_KEY)
+  } catch {
+    // ignore
+  }
+}
+
 /**
- * Full-screen install overlay.
- * - Shows our UI first
- * - Only triggers native browser prompt when user clicks Install (required by browsers)
+ * Detects if the app was uninstalled (was installed but now not in standalone mode).
+ * If detected, clears permanent dismissal so user can see the prompt again.
+ * Returns true if uninstallation was detected.
+ */
+function detectAndHandleUninstallation(): boolean {
+  if (wasEverInstalled() && !isInStandaloneMode()) {
+    clearPermanentDismissal()
+    return true
+  }
+  return false
+}
+
+/**
+ * Determines if the dialog should be shown.
+ * Logic:
+ * - Never show if currently installed (in standalone mode)
+ * - Show if app was uninstalled (was installed before) OR if not permanently dismissed
+ */
+function shouldShowDialog(): boolean {
+  if (isInStandaloneMode()) {
+    return false
+  }
+  
+  // If they previously installed and now they're not in standalone mode, they uninstalled
+  // Show the dialog again (dismissal already cleared by detectAndHandleUninstallation)
+  if (wasEverInstalled()) {
+    return true
+  }
+  
+  // Otherwise, only show if not permanently dismissed
+  return !isPermanentlyDismissed()
+}
+
+/**
+ * Full-screen install overlay with smart install/uninstall detection.
+ * 
+ * Behavior:
+ * - Never shows if app is currently installed (standalone mode)
+ * - Shows for users who installed then uninstalled (even if they previously dismissed)
+ * - Shows for users who haven't permanently dismissed it
+ * - Cancel button: closes dialog, shows again on refresh
+ * - "Don't show this again": permanently dismisses (unless they uninstall)
+ * 
+ * Edge cases handled:
+ * - iOS devices (appinstalled event doesn't fire, detected via standalone mode)
+ * - Uninstallation detection (was installed but now not in standalone mode)
+ * - Previous version compatibility (clears old dismiss keys)
+ * - Multiple tabs (each instance handles independently)
  */
 export default function PwaInstallOverlay() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
@@ -57,27 +127,39 @@ export default function PwaInstallOverlay() {
   const isIos = useMemo(() => isIosDevice(), [])
 
   useEffect(() => {
-    setInstalled(isInStandaloneMode())
+    const currentInstalled = isInStandaloneMode()
+    setInstalled(currentInstalled)
 
     // Clear old dismiss key from previous version so users who cancelled before will see it again
-    // Only permanent dismissal should prevent showing the dialog now
     try {
       localStorage.removeItem(DISMISS_KEY)
     } catch {
       // ignore
     }
 
+    // Mark as installed if currently in standalone mode (handles iOS where appinstalled doesn't fire)
+    if (currentInstalled && !wasEverInstalled()) {
+      markAsInstalled()
+    }
+
+    // Detect uninstallation on mount: if was installed but now not in standalone mode
+    detectAndHandleUninstallation()
+
     const onBeforeInstallPrompt = (e: Event) => {
       e.preventDefault()
       setDeferredPrompt(e as BeforeInstallPromptEvent)
 
-      // Only check for permanent dismissal - previous cancellations won't prevent showing
-      if (!isInStandaloneMode() && !isPermanentlyDismissed()) {
+      // Detect uninstallation before checking if we should show
+      detectAndHandleUninstallation()
+      
+      // Use the comprehensive shouldShowDialog logic
+      if (shouldShowDialog()) {
         setOpen(true)
       }
     }
 
     const onAppInstalled = () => {
+      markAsInstalled()
       setInstalled(true)
       setDeferredPrompt(null)
       setOpen(false)
@@ -85,8 +167,14 @@ export default function PwaInstallOverlay() {
 
     const onOpenInstall = () => {
       if (isInStandaloneMode()) return
-      if (isPermanentlyDismissed()) return
-      setOpen(true)
+      
+      // Detect uninstallation before checking if we should show
+      detectAndHandleUninstallation()
+      
+      // Use shouldShowDialog to handle uninstall case
+      if (shouldShowDialog()) {
+        setOpen(true)
+      }
     }
 
     window.addEventListener('beforeinstallprompt', onBeforeInstallPrompt as any)
@@ -94,7 +182,18 @@ export default function PwaInstallOverlay() {
     window.addEventListener('pwa:open-install', onOpenInstall as any)
 
     const mq = window.matchMedia?.('(display-mode: standalone)')
-    const onMqChange = () => setInstalled(isInStandaloneMode())
+    const onMqChange = () => {
+      const newInstalled = isInStandaloneMode()
+      setInstalled(newInstalled)
+      
+      // Mark as installed if now in standalone mode (handles iOS where appinstalled doesn't fire)
+      if (newInstalled && !wasEverInstalled()) {
+        markAsInstalled()
+      }
+      
+      // Detect uninstallation when standalone mode changes from installed to not installed
+      detectAndHandleUninstallation()
+    }
     mq?.addEventListener?.('change', onMqChange)
 
     return () => {
@@ -129,6 +228,8 @@ export default function PwaInstallOverlay() {
       const choice = await deferredPrompt.userChoice
       // If accepted, the appinstalled event usually fires. We also close here.
       if (choice.outcome === 'accepted') {
+        // Mark as installed (appinstalled event will also fire, but this ensures it's set)
+        markAsInstalled()
         setInstalled(true)
         setOpen(false)
       } else {
