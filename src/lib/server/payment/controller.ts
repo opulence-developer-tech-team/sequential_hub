@@ -14,7 +14,7 @@ import {
 import { logger } from "../utils/logger";
 import { emailService } from "../utils/email";
 
-class PaymentController {
+class PaymentController {    //ok
   /**
    * Send payment confirmation email
    */
