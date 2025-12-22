@@ -114,7 +114,8 @@ function shouldShowDialog(): boolean {
  * 
  * Edge cases handled:
  * - iOS devices (appinstalled event doesn't fire, detected via standalone mode)
- * - Uninstallation detection (was installed but now not in standalone mode)
+ * - Desktop browsers (Chrome/Edge support beforeinstallprompt, Safari uses standalone detection)
+ * - Uninstallation detection (was installed but now not in standalone mode) - works on all platforms
  * - Previous version compatibility (clears old dismiss keys)
  * - Multiple tabs (each instance handles independently)
  */
@@ -143,16 +144,21 @@ export default function PwaInstallOverlay() {
     }
 
     // Detect uninstallation on mount: if was installed but now not in standalone mode
-    detectAndHandleUninstallation()
+    const wasUninstalled = detectAndHandleUninstallation()
 
-    // For iOS: Show dialog automatically since beforeinstallprompt never fires
-    // iOS requires manual installation instructions
-    let iosTimer: NodeJS.Timeout | null = null
-    if (isIos && shouldShowDialog()) {
-      // Small delay to ensure page is fully loaded and user sees the dialog
-      iosTimer = setTimeout(() => {
-        setOpen(true)
-      }, 1000)
+    // Show dialog automatically if:
+    // 1. iOS: beforeinstallprompt never fires, so always auto-show if conditions met
+    // 2. Uninstallation detected (any platform): show immediately (beforeinstallprompt may not fire after uninstall)
+    // 3. Desktop/Android (normal case): wait for beforeinstallprompt event
+    let autoShowTimer: ReturnType<typeof setTimeout> | null = null
+    if (shouldShowDialog()) {
+      if (isIos || wasUninstalled) {
+        // For iOS or detected uninstallation (iOS/Android/Desktop): show after a short delay
+        autoShowTimer = setTimeout(() => {
+          setOpen(true)
+        }, 1000)
+      }
+      // For Desktop/Android (non-uninstall case): wait for beforeinstallprompt event
     }
 
     const onBeforeInstallPrompt = (e: Event) => {
@@ -194,6 +200,7 @@ export default function PwaInstallOverlay() {
     const mq = window.matchMedia?.('(display-mode: standalone)')
     const onMqChange = () => {
       const newInstalled = isInStandaloneMode()
+      const wasInstalledBefore = installed
       setInstalled(newInstalled)
       
       // Mark as installed if now in standalone mode (handles iOS where appinstalled doesn't fire)
@@ -202,12 +209,17 @@ export default function PwaInstallOverlay() {
       }
       
       // Detect uninstallation when standalone mode changes from installed to not installed
-      detectAndHandleUninstallation()
+      const wasUninstalled = detectAndHandleUninstallation()
+      
+      // If uninstallation detected (was installed, now not), show dialog immediately
+      if (wasInstalledBefore && !newInstalled && wasUninstalled && shouldShowDialog()) {
+        setOpen(true)
+      }
     }
     mq?.addEventListener?.('change', onMqChange)
 
     return () => {
-      if (iosTimer) clearTimeout(iosTimer)
+      if (autoShowTimer) clearTimeout(autoShowTimer)
       window.removeEventListener('beforeinstallprompt', onBeforeInstallPrompt as any)
       window.removeEventListener('appinstalled', onAppInstalled as any)
       window.removeEventListener('pwa:open-install', onOpenInstall as any)
@@ -326,24 +338,36 @@ export default function PwaInstallOverlay() {
             </div>
 
             {isIos && (
-              <div className="mt-4 rounded-xl border border-apple-gray-200 bg-white px-4 py-3 text-sm text-apple-gray-700">
-                <p className="font-medium text-apple-gray-900">iPhone/iPad instructions</p>
-                <p className="mt-1">
-                  Tap <strong>Share</strong> → <strong>Add to Home Screen</strong>.
+              <div className="mt-4 rounded-xl border-2 border-primary-500 bg-primary-50 px-4 py-4 text-sm">
+                <p className="font-semibold text-primary-900 mb-2">📱 How to Install on iPhone/iPad:</p>
+                <ol className="list-decimal list-inside space-y-2 text-apple-gray-700">
+                  <li>Tap the <strong className="text-primary-900">Share</strong> button <span className="text-lg">⎋</span> at the bottom of your screen</li>
+                  <li>Scroll down and tap <strong className="text-primary-900">"Add to Home Screen"</strong></li>
+                  <li>Tap <strong className="text-primary-900">"Add"</strong> in the top right corner</li>
+                </ol>
+                <p className="mt-3 text-xs text-apple-gray-600 italic">
+                  The app will appear on your home screen like a native app!
                 </p>
               </div>
             )}
 
             <div className="mt-5 flex flex-col gap-3">
-              <button
-                type="button"
-                onClick={isIos ? close : handleInstall}
-                disabled={!deferredPrompt && !isIos}
-                className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-primary-600 px-5 py-3 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
-              >
-                <Download className="h-5 w-5" />
-                {isIos ? 'Got it' : isInstalling ? 'Opening…' : 'Install app'}
-              </button>
+              {isIos ? (
+                <div className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-primary-600 px-5 py-3 text-sm font-semibold text-white">
+                  <Download className="h-5 w-5" />
+                  Follow the instructions above to install
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleInstall}
+                  disabled={!deferredPrompt || isInstalling}
+                  className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-primary-600 px-5 py-3 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+                >
+                  <Download className="h-5 w-5" />
+                  {isInstalling ? 'Opening…' : 'Install app'}
+                </button>
+              )}
 
               <div className="flex flex-col sm:flex-row gap-3">
                 <button
