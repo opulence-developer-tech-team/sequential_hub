@@ -145,6 +145,16 @@ export default function PwaInstallOverlay() {
     // Detect uninstallation on mount: if was installed but now not in standalone mode
     detectAndHandleUninstallation()
 
+    // For iOS: Show dialog automatically since beforeinstallprompt never fires
+    // iOS requires manual installation instructions
+    let iosTimer: NodeJS.Timeout | null = null
+    if (isIos && shouldShowDialog()) {
+      // Small delay to ensure page is fully loaded and user sees the dialog
+      iosTimer = setTimeout(() => {
+        setOpen(true)
+      }, 1000)
+    }
+
     const onBeforeInstallPrompt = (e: Event) => {
       e.preventDefault()
       setDeferredPrompt(e as BeforeInstallPromptEvent)
@@ -173,7 +183,7 @@ export default function PwaInstallOverlay() {
       
       // Use shouldShowDialog to handle uninstall case
       if (shouldShowDialog()) {
-        setOpen(true)
+      setOpen(true)
       }
     }
 
@@ -197,6 +207,7 @@ export default function PwaInstallOverlay() {
     mq?.addEventListener?.('change', onMqChange)
 
     return () => {
+      if (iosTimer) clearTimeout(iosTimer)
       window.removeEventListener('beforeinstallprompt', onBeforeInstallPrompt as any)
       window.removeEventListener('appinstalled', onAppInstalled as any)
       window.removeEventListener('pwa:open-install', onOpenInstall as any)
